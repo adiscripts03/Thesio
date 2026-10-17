@@ -72,28 +72,45 @@ def get_llm_config():
         model = os.getenv("LLM_MODEL") or os.getenv("GEMMA_MODEL") or "gemma4:12b"
     elif is_groq:
         token = groq_key or ""
-        model = os.getenv("GROQ_MODEL") or os.getenv("LLM_MODEL") or "llama-3.3-70b-versatile"
+        model = os.getenv("GROQ_MODEL") or os.getenv("LLM_MODEL") or "qwen/qwen3.8-27b"
     else:
         token = gemma_key or gemini_key or ""
-        model = os.getenv("LLM_MODEL") or os.getenv("GEMMA_MODEL") or "gemma-2-27b-it"
+        model = os.getenv("LLM_MODEL") or os.getenv("GEMMA_MODEL") or "gemini-3.5-flash"
 
     return base_url, token, is_local, model
 
 def _call_gemini_fallback(prompt: str, system_prompt: str, require_json: bool, api_key: str) -> str:
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent?key={api_key}"
-    payload: Dict[str, Any] = {
-        "contents": [{"parts": [{"text": prompt}]}]
-    }
-    if system_prompt:
-        payload["system_instruction"] = {"parts": [{"text": system_prompt}]}
-    if require_json:
-        payload["generationConfig"] = {"responseMimeType": "application/json"}
+    candidate_models = [
+        os.getenv("GEMINI_MODEL"),
+        "gemini-3.5-flash",
+        "gemini-3.1-flash-lite",
+        "gemini-flash-latest",
+    ]
+    candidate_models = [m for m in candidate_models if m]
 
-    g_res = requests.post(url, json=payload, timeout=60)
-    if not g_res.ok:
-        raise ValueError(f"Gemini API error ({g_res.status_code}): {g_res.text[:200]}")
-    g_json = g_res.json()
-    return g_json["candidates"][0]["content"]["parts"][0]["text"]
+    last_error = ""
+    for model in candidate_models:
+        try:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+            payload: Dict[str, Any] = {
+                "contents": [{"parts": [{"text": prompt}]}]
+            }
+            if system_prompt:
+                payload["system_instruction"] = {"parts": [{"text": system_prompt}]}
+            if require_json:
+                payload["generationConfig"] = {"responseMimeType": "application/json"}
+
+            g_res = requests.post(url, json=payload, timeout=60)
+            if g_res.ok:
+                g_json = g_res.json()
+                return g_json["candidates"][0]["content"]["parts"][0]["text"]
+            last_error = f"Gemini ({model} -> {g_res.status_code}): {g_res.text[:200]}"
+            logger.warning(last_error)
+        except Exception as e:
+            last_error = str(e)
+            logger.warning(f"Error calling {model}: {e}")
+
+    raise ValueError(f"Gemini fallback failed across models: {last_error}")
 
 def call_llm(
     prompt: str, 

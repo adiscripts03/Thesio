@@ -42,11 +42,11 @@ function getGatewayConfig() {
 export const DEFAULT_MODEL = process.env["LLM_MODEL"] || 
   process.env["GROQ_MODEL"] || 
   process.env["GEMMA_MODEL"] || 
-  (process.env["USE_LOCAL_LLM"] === "true" ? "gemma4:12b" : (process.env["GROQ_API_KEY"] ? "llama-3.3-70b-versatile" : "gemma4:12b"));
+  (process.env["USE_LOCAL_LLM"] === "true" ? "gemma4:12b" : (process.env["GROQ_API_KEY"] ? "qwen/qwen3.8-27b" : "gemma4:12b"));
 
 export const FALLBACK_MODEL = process.env["GROQ_FALLBACK_MODEL"] || 
   process.env["LLM_FALLBACK_MODEL"] || 
-  (process.env["GROQ_API_KEY"] ? "llama-3.1-8b-instant" : "gemma4:12b");
+  (process.env["GROQ_API_KEY"] ? "openai/gpt-oss-120b" : "gemma4:12b");
 
 export type ChatMessage = { role: "system" | "user" | "assistant"; content: string };
 
@@ -76,7 +76,7 @@ function truncateMessagesForTpm(messages: ChatMessage[], maxTotalBudget: number 
 async function callGroqFallback(messages: ChatMessage[], jsonMode: boolean = false) {
   const groqKey = process.env["GROQ_API_KEY"];
   if (!groqKey) throw new Error("GROQ_API_KEY is not configured.");
-  const model = process.env["GROQ_MODEL"] || "llama-3.3-70b-versatile";
+  const model = process.env["GROQ_MODEL"] || "qwen/qwen3.8-27b";
   
   const body: Record<string, unknown> = {
     model,
@@ -108,28 +108,42 @@ async function callGroqFallback(messages: ChatMessage[], jsonMode: boolean = fal
 async function callGemini(messages: ChatMessage[]) {
   const geminiKey = process.env["GEMINI_API_KEY"] || "";
   if (!geminiKey) throw new Error("GEMINI_API_KEY is not set for fallback.");
-  const geminiModel = process.env["GEMINI_MODEL"] || "gemini-1.5-flash";
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${geminiKey}`;
-  
-  const contents = messages.map(m => ({
-    role: m.role === "assistant" ? "model" : "user",
-    parts: [{ text: m.content }]
-  }));
-  
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ contents })
-  });
+  const candidateModels = [
+    process.env["GEMINI_MODEL"],
+    "gemini-3.5-flash",
+    "gemini-3.1-flash-lite",
+    "gemini-flash-latest",
+  ].filter(Boolean) as string[];
 
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Gemini fallback failed (${res.status}): ${text.slice(0, 300)}`);
+  let lastError = "";
+  for (const model of candidateModels) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`;
+      const contents = messages.map(m => ({
+        role: m.role === "assistant" ? "model" : "user",
+        parts: [{ text: m.content }]
+      }));
+      
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contents })
+      });
+
+      if (res.ok) {
+        const json = await res.json();
+        const text = json.candidates?.[0]?.content?.parts?.[0]?.text || "";
+        return { choices: [{ message: { content: text } }] };
+      }
+      const text = await res.text();
+      lastError = `Gemini (${model} -> ${res.status}): ${text.slice(0, 200)}`;
+      console.warn(lastError);
+    } catch (err: any) {
+      lastError = err?.message || String(err);
+    }
   }
 
-  const json = await res.json();
-  const text = json.candidates?.[0]?.content?.parts?.[0]?.text || "";
-  return { choices: [{ message: { content: text } }] };
+  throw new Error(`Gemini fallback failed across models: ${lastError}`);
 }
 
 async function post(body: Record<string, unknown>, modelOverride?: string) {

@@ -63,15 +63,15 @@ function Landing() {
           <div className="grid gap-12 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
             {/* Left copy */}
             <div>
-              <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-orange-500/25 bg-orange-500/10 px-3.5 py-1 text-[11px] font-medium text-orange-400">
-                <span className="inline-block h-2 w-2 rounded-full bg-orange-500 animate-pulse" />
-                <span>Hacktoberfest Hack Day x AWS SBG RTMSSU · Powered by Gemma 4</span>
+              <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3.5 py-1 text-[11px] font-medium text-primary">
+                <span className="inline-block h-2 w-2 rounded-full bg-primary animate-pulse" />
+                <span>Autonomous Research Studio · Powered by Gemma 4</span>
               </div>
               <h1 className="text-4xl leading-[1.08] font-bold tracking-tight sm:text-5xl md:text-6xl text-foreground">
-                From a vague hunch to an empirical, drafted manuscript.
+                From a Vague Plan to Publication Grade Latex Research Paper
               </h1>
               <p className="mt-6 max-w-xl text-base leading-relaxed text-muted-foreground">
-                Seventeen autonomous sub-agents synthesize literature, formulate formal hypotheses, and benchmark
+                Fourteen autonomous sub-agents synthesize literature, formulate formal hypotheses, and benchmark
                 implementations — kept on an uncompromising leash with untrusted data firewalls and human gates at every irreversible step.
               </p>
               <div className="mt-8 flex flex-wrap items-center gap-3.5">
@@ -328,7 +328,6 @@ function Landing() {
             <span>· Governed Autonomous Research Studio</span>
           </div>
           <div className="flex items-center gap-4 font-[family-name:var(--font-mono)] text-[10px]">
-            <span className="text-orange-400/90 font-medium">Hacktoberfest Hack Day x AWS SBG RTMSSU</span>
             <span>Gemma 4 Engine</span>
             <span>Version 4.0.2</span>
           </div>

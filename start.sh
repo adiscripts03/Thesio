@@ -2,8 +2,7 @@
 set -e
 
 echo "=========================================================="
-echo "🚀 ResearchBuddy — Powered by Gemma 4"
-echo "🏆 Hacktoberfest Hack Day x AWS SBG RTMSSU"
+echo "🚀 Thesio — Governed Autonomous AI Research Studio"
 echo "=========================================================="
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -35,7 +34,7 @@ else
 fi
 
 echo "=========================================================="
-echo "🎯 Starting ResearchBuddy Dashboard on http://localhost:5173"
+echo "🎯 Starting Thesio Dashboard on http://localhost:5173"
 echo "=========================================================="
 
 npm run dev

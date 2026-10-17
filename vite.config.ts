@@ -78,11 +78,17 @@ export default defineConfig({
   vite: {
     plugins: [pipelineDevServerPlugin()],
     server: {
+      host: "0.0.0.0",
+      allowedHosts: true,
       proxy: {
         "/api/extract-pdf": "http://127.0.0.1:8000",
         "/api/execute": "http://127.0.0.1:8000",
         "/api/py": "http://127.0.0.1:8000",
       },
+    },
+    preview: {
+      host: "0.0.0.0",
+      allowedHosts: true,
     },
   },
 });

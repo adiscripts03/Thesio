@@ -33,8 +33,11 @@ else
   sleep 1
 fi
 
+# Render and other cloud platforms provide $PORT (default to 8080 if not set)
+APP_PORT="${PORT:-8080}"
 echo "=========================================================="
-echo "🎯 Starting Thesio Dashboard on http://localhost:5173"
+echo "🎯 Starting Thesio Dashboard on port $APP_PORT"
 echo "=========================================================="
 
-npm run dev
+npx vite --host 0.0.0.0 --port "$APP_PORT"
+

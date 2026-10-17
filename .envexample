@@ -5,8 +5,13 @@ KAGGLE_API_KEY=your_kaggle_api_token_here
 # E2B Sandbox API Key
 E2B_API_KEY=your_e2b_api_key_here
 
-# Groq LLM API Key
-GROQ_API_KEY=your_groq_api_key_here
+# Gemma 4 LLM Configuration (Hacktoberfest Hack Day x AWS SBG RTMSSU)
+USE_LOCAL_LLM=true
+LLM_MODEL=gemma4:12b
+GEMMA_MODEL=gemma4:12b
+LLM_BASE_URL=http://localhost:11434/v1/chat/completions
+GEMMA_API_KEY=your_gemma_4_api_key_here
+GEMMA_4_API_KEY=your_gemma_4_api_key_here
 
 # GoWinston AI Plagiarism API Key
 WINSTON_AI_API_KEY=your_winston_api_key_here

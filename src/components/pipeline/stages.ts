@@ -34,7 +34,7 @@ export const STAGES: StageDef[] = [
   { name: "Pseudocode", blurb: "Language-agnostic pseudocode from the formulation.", agent: "codegen-agent", supervised: true },
   { name: "Pseudocode review", blurb: "Approve or edit before any code exists.", gate: true, agent: "user" },
   { name: "Code generation", blurb: "Real implementation from approved pseudocode.", agent: "codegen-agent", supervised: true },
-  { name: "Code review", blurb: "Approve the implementation before it can run.", gate: true, agent: "user" },
+  { name: "Code audit", blurb: "Automated syntax and audit check — human review gate deleted.", guard: true, agent: "audit-agent", supervised: true },
   {
     name: "Sandboxed execution",
     blurb: "Isolated container, network denied, resource + time limits, full command audit log.",

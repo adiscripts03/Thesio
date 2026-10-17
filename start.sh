@@ -2,14 +2,15 @@
 set -e
 
 echo "=========================================================="
-echo "🚀 ResearchBuddy — Powered by Local Gemma 4 12B"
+echo "🚀 ResearchBuddy — Powered by Gemma 4"
+echo "🏆 Hacktoberfest Hack Day x AWS SBG RTMSSU"
 echo "=========================================================="
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT_DIR"
 
-# 1. Check / Start Local Ollama if configured
-if [ "$USE_LOCAL_LLM" = "true" ] || [ -z "$GROQ_API_KEY" ]; then
+# 1. Check / Start Local Ollama if configured or if no cloud Gemma API key is set
+if [ "$USE_LOCAL_LLM" = "true" ] || [ -z "$GEMMA_API_KEY" ]; then
   if curl -s http://localhost:11434/api/tags >/dev/null 2>&1; then
     echo "✅ Local Ollama is active on http://localhost:11434"
   else

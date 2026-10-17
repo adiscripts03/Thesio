@@ -63,6 +63,10 @@ function Landing() {
           <div className="grid gap-12 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
             {/* Left copy */}
             <div>
+              <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-orange-500/25 bg-orange-500/10 px-3.5 py-1 text-[11px] font-medium text-orange-400">
+                <span className="inline-block h-2 w-2 rounded-full bg-orange-500 animate-pulse" />
+                <span>Hacktoberfest Hack Day x AWS SBG RTMSSU · Powered by Gemma 4</span>
+              </div>
               <h1 className="text-4xl leading-[1.08] font-bold tracking-tight sm:text-5xl md:text-6xl text-foreground">
                 From a vague hunch to an empirical, drafted manuscript.
               </h1>
@@ -90,7 +94,7 @@ function Landing() {
                   <div className="text-[11px] text-muted-foreground mt-0.5">Sequential stages</div>
                 </div>
                 <div>
-                  <div className="font-[family-name:var(--font-mono)] text-xl font-semibold text-foreground">4 Gates</div>
+                  <div className="font-[family-name:var(--font-mono)] text-xl font-semibold text-foreground">3 Gates</div>
                   <div className="text-[11px] text-muted-foreground mt-0.5">Mandatory human reviews</div>
                 </div>
                 <div>
@@ -193,7 +197,7 @@ function Landing() {
               </span>
               <h3 className="mt-4 text-lg font-semibold text-foreground">Triple Human-in-the-Loop Gates</h3>
               <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-                Irreversible transitions halt automatically: Idea Selection, Pseudocode Review, Code Execution, and
+                Irreversible transitions halt automatically: Idea Selection, Pseudocode Review, and
                 Architecture Mutation require your explicit verification before proceeding.
               </p>
             </div>
@@ -324,7 +328,8 @@ function Landing() {
             <span>· Governed Autonomous Research Studio</span>
           </div>
           <div className="flex items-center gap-4 font-[family-name:var(--font-mono)] text-[10px]">
-            <span>Runtime Active</span>
+            <span className="text-orange-400/90 font-medium">Hacktoberfest Hack Day x AWS SBG RTMSSU</span>
+            <span>Gemma 4 Engine</span>
             <span>Version 4.0.2</span>
           </div>
         </div>

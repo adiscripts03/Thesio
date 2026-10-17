@@ -27,89 +27,137 @@ if os.path.exists(root_env):
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Model defaults
-GROQ_MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
-GROQ_FALLBACK_MODEL = os.getenv("GROQ_FALLBACK_MODEL", "openai/gpt-oss-20b")
+# Gemma 4 LLM Configuration - Hacktoberfest Hack Day x AWS SBG RTMSSU
+USE_LOCAL_LLM = os.getenv("USE_LOCAL_LLM", "false").lower() == "true"
+GEMMA_MODEL = os.getenv("LLM_MODEL") or os.getenv("GEMMA_MODEL") or "gemma4:12b"
+GEMMA_FALLBACK_MODEL = os.getenv("LLM_FALLBACK_MODEL") or os.getenv("GEMMA_FALLBACK_MODEL") or "gemma4:12b"
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
 
-_groq_client: Optional[Any] = None
+def get_llm_config():
+    """Resolves base URL, API key, and locality for Gemma 4 inference."""
+    api_key = (
+        os.getenv("GEMMA_API_KEY")
+        or os.getenv("GEMMA_4_API_KEY")
+        or os.getenv("GEMINI_API_KEY")
+        or os.getenv("LLM_API_KEY")
+        or os.getenv("GROQ_API_KEY")
+        or ""
+    )
+    base_url = os.getenv("LLM_BASE_URL")
+    if not base_url:
+        if USE_LOCAL_LLM or not api_key:
+            base_url = "http://localhost:11434/v1/chat/completions"
+        else:
+            base_url = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
 
-def get_groq_client() -> Optional[Any]:
-    """Lazily initializes and returns the Groq client, ensuring fresh environment variables."""
-    global _groq_client
-    if _groq_client is not None:
-        return _groq_client
-    if Groq is None:
-        return None
-    api_key = os.getenv("GROQ_API_KEY")
-    if api_key:
-        _groq_client = Groq(api_key=api_key)
-        return _groq_client
-    return None
+    is_local = "localhost" in base_url or "127.0.0.1" in base_url
+    token = api_key if api_key else ("ollama" if is_local else "")
+    return base_url, token, is_local
 
-def call_llm(prompt: str, system_prompt: str = "", require_json: bool = False, json_schema: Optional[type[BaseModel]] = None) -> str:
+def _call_gemini_fallback(prompt: str, system_prompt: str, require_json: bool, api_key: str) -> str:
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent?key={api_key}"
+    payload: Dict[str, Any] = {
+        "contents": [{"parts": [{"text": prompt}]}]
+    }
+    if system_prompt:
+        payload["system_instruction"] = {"parts": [{"text": system_prompt}]}
+    if require_json:
+        payload["generationConfig"] = {"responseMimeType": "application/json"}
+
+    g_res = requests.post(url, json=payload, timeout=60)
+    if not g_res.ok:
+        raise ValueError(f"Gemini API error ({g_res.status_code}): {g_res.text[:200]}")
+    g_json = g_res.json()
+    return g_json["candidates"][0]["content"]["parts"][0]["text"]
+
+def call_llm(
+    prompt: str, 
+    system_prompt: str = "", 
+    require_json: bool = False, 
+    json_schema: Optional[type[BaseModel]] = None,
+    model_override: Optional[str] = None
+) -> str:
     """
-    Calls Groq default model first. If rate-limited or JSON validation fails, retries with fallback model and Gemini.
+    Calls Gemma 4 (Local or Cloud API) first.
+    If rate-limited or fails, gracefully falls back to Gemini.
     """
     messages = []
     if system_prompt:
         messages.append({"role": "system", "content": system_prompt})
     messages.append({"role": "user", "content": prompt})
 
-    client = get_groq_client()
+    base_url, api_key, is_local = get_llm_config()
+    model = model_override or GEMMA_MODEL
 
+    headers = {
+        "Content-Type": "application/json",
+    }
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
+
+    payload: Dict[str, Any] = {
+        "messages": messages,
+        "model": model,
+        "max_tokens": 4096 if is_local else 2048,
+    }
+    if require_json:
+        payload["response_format"] = {"type": "json_object"}
+
+    logger.info(f"Calling Gemma 4 ({model}) at {base_url}...")
     try:
-        if not client:
-            raise ValueError("GROQ_API_KEY is not set or Groq client is uninitialized.")
+        res = requests.post(base_url, headers=headers, json=payload, timeout=90)
         
-        logger.info(f"Calling Groq ({GROQ_MODEL})...")
-        kwargs: Dict[str, Any] = {
-            "messages": messages,
-            "model": GROQ_MODEL,
-        }
-        if require_json:
-            kwargs["response_format"] = {"type": "json_object"}
-            
-        completion = client.chat.completions.create(**kwargs)
-        return completion.choices[0].message.content or ""
-        
+        # If response was not ok, check if response_format caused issue or if retry needed
+        if not res.ok:
+            logger.warning(f"Gemma 4 call returned HTTP {res.status_code}: {res.text[:200]}")
+            if require_json and "response_format" in payload:
+                logger.info("Retrying without response_format constraint...")
+                payload_retry = dict(payload)
+                del payload_retry["response_format"]
+                res_retry = requests.post(base_url, headers=headers, json=payload_retry, timeout=90)
+                if res_retry.ok:
+                    data = res_retry.json()
+                    return data.get("choices", [{}])[0].get("message", {}).get("content", "")
+
+            # If cloud fallback to Gemini is available
+            gemini_key = os.getenv("GEMINI_API_KEY") or (api_key if not is_local else "")
+            if gemini_key and not is_local:
+                logger.info("Falling back to Gemini...")
+                return _call_gemini_fallback(prompt, system_prompt, require_json, gemini_key)
+
+            res.raise_for_status()
+
+        data = res.json()
+        content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+        if not content:
+            raise ValueError(f"Empty content returned from Gemma 4 API ({base_url})")
+        return content
+
     except Exception as e:
-        logger.warning(f"Groq primary call failed ({e}). Retrying with fallback ({GROQ_FALLBACK_MODEL})...")
-        if client:
+        logger.warning(f"Gemma 4 primary call failed: {e}. Attempting fallback...")
+        gemini_key = os.getenv("GEMINI_API_KEY") or (api_key if not is_local else "")
+        if gemini_key and not is_local:
             try:
-                kwargs = {
-                    "messages": messages,
-                    "model": GROQ_FALLBACK_MODEL,
-                }
-                if require_json:
-                    # Do not enforce strict response_format on retry if JSON validation failed
-                    if "json_validate_failed" not in str(e):
-                        kwargs["response_format"] = {"type": "json_object"}
-                completion = client.chat.completions.create(**kwargs)
+                logger.info("Retrying with Gemini fallback...")
+                return _call_gemini_fallback(prompt, system_prompt, require_json, gemini_key)
+            except Exception as e_gemini:
+                logger.error(f"Gemini fallback failed: {e_gemini}")
+
+        # Check if legacy Groq client is configured and available
+        groq_key = os.getenv("GROQ_API_KEY")
+        if groq_key and Groq is not None:
+            try:
+                logger.info("Attempting legacy Groq fallback...")
+                client = Groq(api_key=groq_key)
+                completion = client.chat.completions.create(
+                    messages=messages,
+                    model=os.getenv("GROQ_MODEL", "openai/gpt-oss-120b"),
+                )
                 return completion.choices[0].message.content or ""
-            except Exception as e2:
-                logger.warning(f"Groq fallback failed: {e2}. Falling back to Gemini ({GEMINI_MODEL})...")
-        
-        # Fallback to Gemini if Groq is unavailable or failed
-        gemini_api_key = os.getenv("GEMINI_API_KEY")
-        if not gemini_api_key:
-            raise ValueError(f"Groq call failed ({e}) and GEMINI_API_KEY is not configured for fallback.")
+            except Exception as e_groq:
+                logger.error(f"Legacy Groq fallback failed: {e_groq}")
 
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent?key={gemini_api_key}"
-        payload: Dict[str, Any] = {
-            "contents": [{"parts": [{"text": prompt}]}]
-        }
-        if system_prompt:
-            payload["system_instruction"] = {"parts": [{"text": system_prompt}]}
-        if require_json:
-            payload["generationConfig"] = {"responseMimeType": "application/json"}
-
-        g_res = requests.post(url, json=payload, timeout=60)
-        if not g_res.ok:
-            raise ValueError(f"Gemini API error ({g_res.status_code}): {g_res.text}")
-        
-        g_json = g_res.json()
-        return g_json["candidates"][0]["content"]["parts"][0]["text"]
+        raise ValueError(f"Gemma 4 call failed: {e}")
 
 def extract_json(raw: str) -> dict:
     """Safely extracts and parses JSON from an LLM response even if fenced in markdown or with LaTeX escapes."""

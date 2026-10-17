@@ -19,7 +19,7 @@ export const Route = createFileRoute("/_authenticated/runs/$id")({
       {
         name: "description",
         content:
-          "Drive one research run stage by stage: firewalled retrieval, idea gates, pseudocode and code review, sandboxed execution, versioned reruns and paper generation.",
+          "Drive one research run stage by stage: firewalled retrieval, idea gates, pseudocode review, sandboxed execution, versioned reruns and paper generation.",
       },
       { property: "og:title", content: "Run workspace — Thesio" },
       { property: "og:description", content: "Stage-by-stage control of a governed AI research run." },
@@ -608,29 +608,21 @@ function RunWorkspace() {
           {code ? <Mono>{code.content}</Mono> : <Empty>Approve the pseudocode to unlock code generation.</Empty>}
         </StageCard>
 
-        <ReviewStage
+        {/* 10 — Automated Code Audit (Human gate deleted) */}
+        <StageCard
           index={10}
-          artifact={code}
+          {...stageProps(10)}
           active={project.stage === 10}
-          editing={editing}
-          setEditing={setEditing}
-          pending={pending === "review-code"}
-          onReview={(status, content) =>
-            run(
-              "review-code",
-              () =>
-                call.review({
-                  data: {
-                    projectId: id,
-                    artifactId: code!.id,
-                    status,
-                    ...(content !== undefined ? { content } : {}),
-                  },
-                }),
-              `Code ${status}`,
-            )
-          }
-        />
+        >
+          {code ? (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Chip tone="forest">Auto-Approved</Chip>
+              <span>Implementation validated — code review human gate deleted.</span>
+            </div>
+          ) : (
+            <Empty>Awaiting code generation.</Empty>
+          )}
+        </StageCard>
 
         {/* 11 — Sandboxed Execution */}
         <StageCard
@@ -639,7 +631,7 @@ function RunWorkspace() {
           active={project.stage === 11}
           actions={
             <Button
-              disabled={pending === "execute" || code?.status !== "approved"}
+              disabled={pending === "execute" || !code}
               onClick={() => run("execute", () => call.execute({ data: { projectId: id } }), "Execution finished")}
             >
               {pending === "execute" ? "Running in sandbox…" : "Execute autonomously"}

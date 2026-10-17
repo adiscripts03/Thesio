@@ -566,8 +566,7 @@ def run_code_in_sandbox(
         return result
 
     except Exception as exc:
-        logger.warning("E2B sandbox execution failed. Falling back to local subprocess execution.")
-        import subprocess
+        logger.warning(f"E2B sandbox execution failed ({exc}). Falling back to local subprocess execution.")
         import tempfile
         
         try:
@@ -582,8 +581,10 @@ def run_code_in_sandbox(
                 timeout=execution_timeout
             )
             
-            import os
-            os.remove(tmp_path)
+            try:
+                os.remove(tmp_path)
+            except OSError:
+                pass
             
             return {
                 "success": proc.returncode == 0,

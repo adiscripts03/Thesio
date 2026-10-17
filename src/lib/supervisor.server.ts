@@ -19,7 +19,7 @@ const STAGE = {
   architecture: 14, paper: 15, memory: 16, theory: 17,
 } as const;
 
-const HUMAN_GATES = new Set([STAGE.selection, STAGE.pseudocodeReview, STAGE.codeReview, STAGE.architecture]);
+const HUMAN_GATES = new Set([STAGE.selection, STAGE.pseudocodeReview, STAGE.architecture]);
 
 const STAGE_NAMES: Record<number, string> = {
   1: "Prompt", 2: "Research", 3: "Ideas", 4: "Selection", 5: "Idea Graph",

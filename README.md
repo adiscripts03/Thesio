@@ -1,9 +1,10 @@
 # 🔬 ResearchBuddy
 
-> **Autonomous Scientific Research Operating System powered by Local Gemma 4 12B**  
-> *Built for high-throughput, private, offline-capable multi-agent academic research.*
+> **Autonomous Scientific Research Operating System powered by Gemma 4**  
+> *Made for Hactoberfest Hack Day x AWS SBG RTMSSU*
 
-[![Local Inference](https://img.shields.io/badge/Inference-Gemma_4_12B_(Local)-4285F4.svg)](#)
+[![Hacktoberfest](https://img.shields.io/badge/Hacktoberfest-Hack_Day_x_AWS_SBG_RTMSSU-FF8800.svg)](#)
+[![Inference](https://img.shields.io/badge/Inference-Gemma_4_(API_%26_Local)-4285F4.svg)](#)
 [![Apple Silicon Metal](https://img.shields.io/badge/Acceleration-Metal_GPU-000000.svg)](#)
 [![TypeScript](https://img.shields.io/badge/Stack-TypeScript_%7C_Python_%7C_React-blue.svg)](#)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](#)
@@ -27,19 +28,19 @@
 
 ---
 
-## ⚡ Powered by Local Gemma 4 12B
+## ⚡ Powered by Gemma 4 (API & Local)
 
-ResearchBuddy runs **100% locally and privately**:
-* **Model**: Google Gemma 4 12B (`gemma4:12b` via Ollama)
-* **Hardware Acceleration**: Metal GPU Unified Memory on Apple Silicon
-* **Zero Cloud Lock-in**: No rate limits, zero API credit costs, and complete research confidentiality.
-* **Dual-Mode**: Seamlessly toggles to Groq LPU if cloud bursting is desired.
+ResearchBuddy natively supports **Gemma 4** for both cloud and local inference:
+* **Model**: Google Gemma 4 12B (`gemma4:12b` via Ollama / Gemma 4 API Key)
+* **Cloud API Key**: Dedicated support for `GEMMA_API_KEY` (and `GEMMA_4_API_KEY` / Google AI Studio)
+* **Hardware Acceleration**: Metal GPU Unified Memory on Apple Silicon or CUDA GPU
+* **Zero Cloud Lock-in**: Run completely private and offline without token limits or toggle to cloud Gemma 4 API.
 
 ---
 
 ## 🚀 Quickstart (Hackathon Demo)
 
-### 1. Ensure Ollama is Running
+### 1. Ensure Local Ollama is Running (or configure GEMMA_API_KEY)
 ```bash
 ollama run gemma4:12b
 ```
@@ -64,18 +65,18 @@ ResearchBuddy/
 │   ├── routes/              # TanStack Start / React UI & Interactive Deck
 │   ├── components/pipeline/ # Idea Graph Canvas & Metric Scorecards
 │   └── lib/
-│       ├── ai.server.ts     # Local Gemma 12B & Groq inference gateway
+│       ├── ai.server.ts     # Gemma 4 (API & Local) inference gateway
 │       ├── pipeline.server.ts# 17-stage state machine & fast-path governor
 │       └── supervisor.server.ts # Supervisor agent & transition planning
 ├── backend/
 │   ├── main.py              # FastAPI microservices
-│   ├── llm_engine.py        # Local & cloud LLM runner
+│   ├── llm_engine.py        # Gemma 4 LLM runner (API & Local)
 │   └── plagiarism.py        # Built-in academic novelty verifier
 ├── start.sh                 # One-click startup script
-└── .env                     # Local Gemma 12B configuration
+└── .env                     # Gemma 4 configuration
 ```
 
 ---
 
 ## 📜 License
-MIT License. Built for Innohacks 4.0.
+MIT License. Made for Hactoberfest Hack Day x AWS SBG RTMSSU.

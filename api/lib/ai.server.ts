@@ -1,25 +1,34 @@
+// Gemma 4 LLM Gateway Configuration - Hacktoberfest Hack Day x AWS SBG RTMSSU
 const GATEWAY = process.env["LLM_BASE_URL"] || 
-  (process.env["USE_LOCAL_LLM"] === "true" 
+  (process.env["USE_LOCAL_LLM"] === "true" || !process.env["GEMMA_API_KEY"]
     ? "http://localhost:11434/v1/chat/completions" 
-    : "https://api.groq.com/openai/v1/chat/completions");
+    : "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions");
 
 export const DEFAULT_MODEL = process.env["LLM_MODEL"] || 
-  (process.env["USE_LOCAL_LLM"] === "true" 
-    ? "gemma4:12b" 
-    : (process.env["GROQ_MODEL"] || "openai/gpt-oss-120b"));
+  process.env["GEMMA_MODEL"] || 
+  "gemma4:12b";
+
+export const FALLBACK_MODEL = process.env["GEMMA_FALLBACK_MODEL"] || 
+  process.env["LLM_FALLBACK_MODEL"] || 
+  "gemma4:12b";
 
 export type ChatMessage = { role: "system" | "user" | "assistant"; content: string };
 
 function apiKey(): string {
   if (GATEWAY.includes("localhost") || GATEWAY.includes("127.0.0.1")) {
-    return "ollama";
+    return process.env["GEMMA_API_KEY"] || process.env["GEMMA_4_API_KEY"] || "ollama";
   }
-  const key = process.env["GROQ_API_KEY"] || process.env["VITE_GROQ_API_KEY"] || "";
-  if (!key) throw new Error("AI is not configured for this workspace. Please set GROQ_API_KEY or configure local LLM.");
+  const key = process.env["GEMMA_API_KEY"] || 
+    process.env["GEMMA_4_API_KEY"] || 
+    process.env["GEMINI_API_KEY"] || 
+    process.env["LLM_API_KEY"] || 
+    process.env["GROQ_API_KEY"] || 
+    "";
+  if (!key) {
+    throw new Error("AI is not configured for this workspace. Please set GEMMA_API_KEY or configure local Gemma 4.");
+  }
   return key;
 }
-
-export const FALLBACK_MODEL = process.env["USE_LOCAL_LLM"] === "true" ? "gemma4:12b" : "openai/gpt-oss-20b";
 
 function estimateTokens(text: string): number {
   return Math.ceil(text.length / 3.5);
@@ -105,20 +114,20 @@ async function post(body: Record<string, unknown>, modelOverride?: string) {
     });
 
     if ((res.status === 429 || res.status === 413) && modelToUse !== FALLBACK_MODEL) {
-      console.warn(`Groq limit (${res.status}) on ${modelToUse}. Retrying automatically with ${FALLBACK_MODEL}...`);
+      console.warn(`Gemma API limit (${res.status}) on ${modelToUse}. Retrying automatically with ${FALLBACK_MODEL}...`);
       await new Promise((r) => setTimeout(r, 1000));
       return post(body, FALLBACK_MODEL);
     }
 
     if (!res.ok) {
-      console.warn(`Groq request failed (${res.status}). Falling back to Gemini...`);
+      console.warn(`Gemma API request failed (${res.status}). Falling back to Gemini...`);
       return await callGemini(trimmed);
     }
     return (await res.json()) as {
       choices?: Array<{ message?: { content?: string } }>;
     };
   } catch (err) {
-    console.warn(`Groq error: ${err}. Falling back to Gemini...`);
+    console.warn(`Gemma API error: ${err}. Falling back to Gemini...`);
     return await callGemini(trimmed);
   }
 }
@@ -126,7 +135,7 @@ async function post(body: Record<string, unknown>, modelOverride?: string) {
 export async function askText(messages: ChatMessage[], options?: Record<string, unknown>): Promise<string> {
   const json = await post({ messages, ...options });
   const content = json.choices?.[0]?.message?.content?.trim();
-  if (!content) throw new Error("AI returned an empty response — check Groq API status or rate limits.");
+  if (!content) throw new Error("AI returned an empty response — check Gemma 4 status or API limits.");
   return content;
 }
 

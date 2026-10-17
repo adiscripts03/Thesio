@@ -191,14 +191,14 @@ function RunsPage() {
           in <strong>detailed mode</strong>. Every irreversible step downstream waits for your approval.
         </p>
 
-        <div className="paper mt-6 p-6">
-          <div className="inline-flex rounded-[4px] border border-border/80 bg-secondary/30 p-0.5">
+        <div className="paper mt-6 p-7 sm:p-8">
+          <div className="inline-flex rounded-[4px] border border-border/80 bg-secondary/30 p-1">
             {(["vague", "detailed"] as const).map((m) => (
               <button
                 key={m}
                 type="button"
                 onClick={() => setMode(m)}
-                className={`rounded-[3px] px-3.5 py-1 text-xs font-medium capitalize transition-all ${
+                className={`rounded-[3px] px-4 py-1.5 text-sm font-medium capitalize transition-all ${
                   mode === m
                     ? "bg-primary text-primary-foreground shadow-xs"
                     : "text-muted-foreground hover:text-foreground"
@@ -310,50 +310,50 @@ function RunsPage() {
           </Button>
         </div>
 
-        <div className="mt-10">
+        <div className="mt-12">
           <p className="rule-label">Your runs</p>
-          <div className="mt-3 space-y-2">
-            {runs.isLoading && <p className="text-sm text-muted-foreground">Loading…</p>}
+          <div className="mt-3.5 space-y-3">
+            {runs.isLoading && <p className="text-base text-muted-foreground">Loading…</p>}
             {runs.data?.length === 0 && (
-              <p className="text-sm text-muted-foreground">No runs yet — your first one starts above.</p>
+              <p className="text-base text-muted-foreground">No runs yet — your first one starts above.</p>
             )}
             {runs.data?.map((r) => (
               <Link
                 key={r.id}
                 to="/runs/$id"
                 params={{ id: r.id }}
-                className="paper block px-5 py-4 transition-all hover:border-primary/80 hover:shadow-md"
+                className="paper block px-6 py-5 transition-all hover:border-primary/80 hover:shadow-md"
               >
-                <div className="flex flex-wrap items-baseline gap-3">
-                  <h3 className="text-base font-semibold text-foreground">{r.title}</h3>
+                <div className="flex flex-wrap items-baseline gap-3.5">
+                  <h3 className="text-lg font-semibold text-foreground">{r.title}</h3>
                   <span className="rule-label">{r.mode} mode</span>
                   <span className="ml-auto rule-label">
                     Stage {r.stage} · {STAGES[r.stage - 1]?.name ?? "—"}
                   </span>
                 </div>
-                <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{r.prompt}</p>
+                <p className="mt-2 line-clamp-2 text-base text-muted-foreground">{r.prompt}</p>
               </Link>
             ))}
           </div>
         </div>
       </section>
 
-      <aside className="paper h-fit p-6">
-        <p className="rule-label">The 17 stages</p>
-        <ol className="mt-4 space-y-2 border-l border-border/70 pl-2.5">
+      <aside className="paper h-fit p-6 sm:p-7">
+        <p className="rule-label">The 14 stages</p>
+        <ol className="mt-4 space-y-2.5 border-l border-border/70 pl-3">
           {STAGES.map((s, i) => (
-            <li key={s.name} className="flex items-center gap-2.5 text-xs text-muted-foreground">
-              <span className="font-[family-name:var(--font-mono)] text-[11px] opacity-80">
+            <li key={s.name} className="flex items-center gap-2.5 text-sm text-muted-foreground">
+              <span className="font-[family-name:var(--font-mono)] text-xs opacity-80">
                 {String(i + 1).padStart(2, "0")}
               </span>
               <span className="text-foreground font-medium">{s.name}</span>
               {s.gate && (
-                <span className="ml-auto rounded-[3px] border border-border bg-secondary/80 px-1.5 py-0.5 font-[family-name:var(--font-mono)] text-[9px] uppercase tracking-wider text-muted-foreground">
+                <span className="ml-auto rounded-[3px] border border-border bg-secondary/80 px-2 py-0.5 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-wider text-muted-foreground">
                   gate
                 </span>
               )}
               {s.guard && (
-                <span className="ml-auto rounded-[3px] border border-border bg-secondary/80 px-1.5 py-0.5 font-[family-name:var(--font-mono)] text-[9px] uppercase tracking-wider text-muted-foreground">
+                <span className="ml-auto rounded-[3px] border border-border bg-secondary/80 px-2 py-0.5 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-wider text-muted-foreground">
                   guard
                 </span>
               )}

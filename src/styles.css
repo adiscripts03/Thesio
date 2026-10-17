@@ -168,6 +168,10 @@
     border-color: var(--color-border);
   }
 
+  html {
+    font-size: 17px;
+  }
+
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
@@ -175,6 +179,8 @@
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
+    font-size: 1rem;
+    line-height: 1.6;
   }
 
   h1,
@@ -197,7 +203,7 @@
 
 @utility rule-label {
   font-family: var(--font-mono);
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--muted-foreground);

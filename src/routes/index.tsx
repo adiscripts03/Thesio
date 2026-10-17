@@ -268,17 +268,17 @@ function Landing() {
             </div>
           </div>
 
-          <div className="mt-10 grid gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {filteredStages.map((s) => {
               const originalIndex = STAGES.findIndex((item) => item.name === s.name) + 1;
               return (
                 <div
                   key={s.name}
-                  className="paper flex flex-col justify-between p-4 transition-all hover:border-primary/80 hover:shadow-xs"
+                  className="paper flex flex-col justify-between p-5 transition-all hover:border-primary/80 hover:shadow-sm"
                 >
                   <div>
                     <div className="flex items-center justify-between">
-                      <span className="font-[family-name:var(--font-mono)] text-[11px] font-semibold text-muted-foreground">
+                      <span className="font-[family-name:var(--font-mono)] text-xs font-semibold text-muted-foreground">
                         {String(originalIndex).padStart(2, "0")}
                       </span>
                       <div className="flex gap-1.5">
@@ -286,10 +286,10 @@ function Landing() {
                         {s.guard && <Chip tone="warn">Guard</Chip>}
                       </div>
                     </div>
-                    <h3 className="mt-2 text-sm font-semibold text-foreground">{s.name}</h3>
-                    <p className="mt-1 text-xs text-muted-foreground leading-relaxed">{s.blurb}</p>
+                    <h3 className="mt-2.5 text-base font-semibold text-foreground">{s.name}</h3>
+                    <p className="mt-1.5 text-sm text-muted-foreground leading-relaxed">{s.blurb}</p>
                   </div>
-                  <div className="mt-3 border-t border-border/60 pt-2 font-[family-name:var(--font-mono)] text-[10px] text-muted-foreground">
+                  <div className="mt-4 border-t border-border/60 pt-2.5 font-[family-name:var(--font-mono)] text-[11px] text-muted-foreground">
                     Agent: {s.agent || "pipeline"}
                   </div>
                 </div>

@@ -228,26 +228,26 @@ function RunWorkspace() {
   const lineage = ((draft?.meta as { lineage?: string[] } | null)?.lineage ?? []) as string[];
 
   return (
-    <main className="mx-auto grid max-w-[1400px] gap-8 px-6 py-8 lg:grid-cols-[220px_minmax(0,1fr)_320px]">
+    <main className="mx-auto grid max-w-[1520px] gap-8 px-6 py-8 lg:grid-cols-[240px_minmax(0,1fr)_340px]">
       {/* Stage rail */}
       <nav className="hidden h-fit lg:sticky lg:top-20 lg:block">
         <p className="rule-label">Pipeline</p>
-        <ol className="mt-3 space-y-0.5 border-l border-border/70 pl-2">
+        <ol className="mt-3 space-y-1 border-l border-border/70 pl-2.5">
           {STAGES.map((s, i) => (
             <li key={s.name}>
               <a
                 href={`#stage-${i + 1}`}
-                className={`group flex items-center gap-2.5 rounded-[4px] px-2.5 py-1.5 text-xs transition-all ${
+                className={`group flex items-center gap-2.5 rounded-[4px] px-3 py-2 text-sm transition-all ${
                   project.stage === i + 1
-                    ? "bg-primary text-primary-foreground font-medium -ml-[9px] pl-2 shadow-xs"
+                    ? "bg-primary text-primary-foreground font-medium -ml-[11px] pl-2.5 shadow-xs"
                     : "text-muted-foreground hover:bg-secondary/70 hover:text-foreground"
                 }`}
               >
-                <span className="font-[family-name:var(--font-mono)] text-[11px] opacity-80">{String(i + 1).padStart(2, "0")}</span>
+                <span className="font-[family-name:var(--font-mono)] text-xs opacity-80">{String(i + 1).padStart(2, "0")}</span>
                 <span className="truncate">{s.name}</span>
                 {s.gate && (
                   <span
-                    className={`ml-auto rounded-[2px] px-1 py-0.2 font-[family-name:var(--font-mono)] text-[8px] font-semibold uppercase tracking-wider ${
+                    className={`ml-auto rounded-[3px] px-1.5 py-0.5 font-[family-name:var(--font-mono)] text-[9px] font-semibold uppercase tracking-wider ${
                       project.stage === i + 1 ? "bg-primary-foreground/20 text-primary-foreground" : "text-muted-foreground/80"
                     }`}
                     title="Human approval gate"
@@ -956,17 +956,16 @@ function RunWorkspace() {
 
       {/* Sidebar: Supervisor Control & Audit Log */}
       <aside className="h-fit space-y-4 lg:sticky lg:top-20">
-        <div className="paper p-4">
+        <div className="paper p-5 sm:p-6">
           <div className="flex items-center justify-between">
             <p className="rule-label font-semibold text-foreground">Autonomous Supervisor</p>
             <Chip tone="muted">Active</Chip>
           </div>
-          <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed">
+          <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
             Oversees 11 sub-agents, checks data parameters, fixes bugs, and auto-advances non-gate stages.
           </p>
           <Button
-            className="mt-3.5 w-full text-xs font-medium"
-            size="sm"
+            className="mt-4 w-full text-sm font-medium"
             disabled={pending === "supervisor"}
             onClick={async () => {
               const res = await run("supervisor", () => call.supervisorAdvance({ data: { projectId: id } }));
@@ -985,14 +984,14 @@ function RunWorkspace() {
           </Button>
         </div>
 
-        <div className="paper p-4">
+        <div className="paper p-5 sm:p-6">
           <p className="rule-label">Audit log & Governance</p>
-          <div className="mt-3 max-h-[70vh] space-y-2 overflow-auto pr-1">
+          <div className="mt-3.5 max-h-[70vh] space-y-2.5 overflow-auto pr-1">
             {logs.length === 0 && <Empty>Nothing logged yet.</Empty>}
             {logs.map((l) => (
               <div
                 key={l.id}
-                className={`border-l-2 pl-2.5 py-1 text-xs transition-colors ${
+                className={`border-l-2 pl-3 py-1.5 text-sm transition-colors ${
                   l.severity === "warn"
                     ? "border-amber-500/60 bg-amber-500/5"
                     : l.severity === "gate"
@@ -1000,10 +999,10 @@ function RunWorkspace() {
                       : "border-border/80"
                 }`}
               >
-                <p className="font-[family-name:var(--font-mono)] text-[10px] text-muted-foreground">
+                <p className="font-[family-name:var(--font-mono)] text-[11px] text-muted-foreground">
                   {new Date(l.created_at).toLocaleTimeString()} · {l.actor} · stage {l.stage}
                 </p>
-                <p className="mt-0.5 leading-snug text-foreground/90">{l.event}</p>
+                <p className="mt-1 leading-snug text-foreground/90">{l.event}</p>
               </div>
             ))}
           </div>

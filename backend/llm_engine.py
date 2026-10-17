@@ -158,21 +158,11 @@ def call_llm(
             raise ValueError(f"Empty content returned from Gemma 4 API ({base_url})")
         return content
 
-    except Exception as e:
-        logger.warning(f"Gemma 4 primary call failed: {e}. Attempting fallback...")
-        gemini_key = os.getenv("GEMINI_API_KEY") or (api_key if not is_local else "")
-        if gemini_key and not is_local:
-            try:
-                logger.info("Retrying with Gemini fallback...")
-                return _call_gemini_fallback(prompt, system_prompt, require_json, gemini_key)
-            except Exception as e_gemini:
-                logger.error(f"Gemini fallback failed: {e_gemini}")
-
-        # Check if Groq fallback is configured and available (direct HTTP)
+        # 1. Try Groq first in cloud / fallback
         groq_key = os.getenv("GROQ_API_KEY")
-        if groq_key:
+        if groq_key and not is_groq:
             try:
-                logger.info("Attempting Groq HTTP fallback...")
+                logger.info("Attempting Groq fallback...")
                 groq_model = os.getenv("GROQ_MODEL") or "llama-3.3-70b-versatile"
                 groq_payload: Dict[str, Any] = {
                     "model": groq_model,
@@ -190,9 +180,18 @@ def call_llm(
                 if groq_res.ok:
                     groq_data = groq_res.json()
                     return groq_data.get("choices", [{}])[0].get("message", {}).get("content", "")
-                logger.warning(f"Groq HTTP fallback error ({groq_res.status_code}): {groq_res.text[:150]}")
+                logger.warning(f"Groq fallback returned HTTP {groq_res.status_code}: {groq_res.text[:150]}")
             except Exception as e_groq:
                 logger.error(f"Groq fallback failed: {e_groq}")
+
+        # 2. Try Gemini fallback if Groq failed or not configured
+        gemini_key = os.getenv("GEMINI_API_KEY") or (api_key if not is_local and not is_groq else "")
+        if gemini_key:
+            try:
+                logger.info("Retrying with Gemini fallback...")
+                return _call_gemini_fallback(prompt, system_prompt, require_json, gemini_key)
+            except Exception as e_gemini:
+                logger.error(f"Gemini fallback failed: {e_gemini}")
 
         raise ValueError(f"LLM call failed across all providers: {e}")
 

@@ -13,18 +13,22 @@
 
 ## 🌟 Overview
 
-**ResearchBuddy** elevates autonomous AI research from isolated script generation to rigorous, publication-grade inquiry. Governed by a **Fast-Path Supervisor Governor** orchestrating specialized sub-agents, ResearchBuddy advances scientific hypotheses through a governed **17-stage pipeline**:
+**ResearchBuddy** elevates autonomous AI research from isolated script generation to rigorous, publication-grade inquiry. Governed by a **Fast-Path Supervisor Governor** orchestrating specialized sub-agents, ResearchBuddy advances scientific hypotheses through a governed **14-stage pipeline**:
 
-1. **Literature Discovery**: Semantic search across ArXiv & academic repositories.
-2. **Hypothesis Synthesis**: Novelty discovery with falsifiability scoring.
-3. **Interactive Idea Graph**: Relational dependency visualization (supports, extends, contradicts).
-4. **Mathematical Formulation**: Formal problem derivation in LaTeX.
-5. **Algorithmic Pseudocode & Audit**: Formal specification with automated code review.
-6. **Empirical Code Sandbox**: Sandboxed execution in isolated containers.
-7. **Metric Scorecards**: Empirical validation with ablation and parameter sweeps.
-8. **Camera-Ready LaTeX Paper**: Full 10–12 page publication paper with citations.
-9. **Native Originality Verification**: In-flight novelty audit without external API bottlenecks.
-10. **Institutional Memory Distillation**: Cross-run knowledge accumulation.
+1. **Prompt Input**: Vague or detailed mode definition by the user.
+2. **Extensive Research**: Sub-agents keyword & dense retrieval with provenance tagging.
+3. **Idea Surfacing**: Candidate hypotheses, cross-source contradictions, and injection defense.
+4. **Idea Selection (Gate)**: Human governance gate to select and guide hypothesis.
+5. **Interactive Idea Graph**: Dependency DAG visualizing connections, gaps, and risks.
+6. **Mathematical Formulation**: Formal problem derivation in LaTeX with concept lineage.
+7. **Algorithmic Pseudocode**: Language-agnostic formal algorithm design.
+8. **Pseudocode Review (Gate)**: Human verification gate prior to implementation.
+9. **Code Generation**: Real executable implementation from verified pseudocode.
+10. **Sandboxed Execution**: Isolated, air-gapped container execution with resource limits.
+11. **Result Check**: Automated validation against empirical metrics and baselines.
+12. **Rerun Loop**: Parameter sweeps, retuning, and versioned scorecards.
+13. **Architecture Gate (Gate)**: Human governance for architectural modifications & auto-rollback.
+14. **Paper Generation (Final Stage)**: Camera-ready publication draft in LaTeX with citations and originality scan.
 
 ---
 
@@ -66,7 +70,7 @@ ResearchBuddy/
 │   ├── components/pipeline/ # Idea Graph Canvas & Metric Scorecards
 │   └── lib/
 │       ├── ai.server.ts     # Gemma 4 (API & Local) inference gateway
-│       ├── pipeline.server.ts# 17-stage state machine & fast-path governor
+│       ├── pipeline.server.ts# 14-stage state machine & fast-path governor
 │       └── supervisor.server.ts # Supervisor agent & transition planning
 ├── backend/
 │   ├── main.py              # FastAPI microservices

@@ -95,14 +95,11 @@ export const STAGE = {
   pseudocode: 7,
   pseudocodeReview: 8,
   code: 9,
-  codeReview: 10,
-  execution: 11,
-  results: 12,
-  rerun: 13,
-  architecture: 14,
-  paper: 15,
-  memory: 16,
-  theory: 17,
+  execution: 10,
+  results: 11,
+  rerun: 12,
+  architecture: 13,
+  paper: 14,
 } as const;
 
 async function log(
@@ -707,7 +704,7 @@ export async function reviewArtifactImpl(
     .single();
   if (error) throw new Error(error.message);
 
-  const stage = data.kind === "pseudocode" ? STAGE.pseudocodeReview : data.kind === "code" ? STAGE.codeReview : STAGE.formulation;
+  const stage = data.kind === "pseudocode" ? STAGE.pseudocodeReview : data.kind === "code" ? STAGE.code : STAGE.formulation;
   await log(db, userId, input.projectId, stage, `Human review gate: ${data.kind} v${data.version} ${input.status}`, {
     actor: "user",
     severity: "gate",
@@ -1176,7 +1173,8 @@ export async function paperImpl(db: DB, userId: string, projectId: string) {
     plagiarism: plagiarismResult as unknown as Json,
   });
   await log(db, userId, projectId, STAGE.paper, `Paper v${artifact.version} generated — plagiarism check ${plagiarismResult.success ? "complete" : "ready for scan"}`, { actor: "writing-agent" });
-  await setStage(db, projectId, STAGE.memory);
+  await setStage(db, projectId, STAGE.paper);
+  await db.from("projects").update({ status: "complete", stage: STAGE.paper }).eq("id", projectId);
   return artifact;
 }
 
@@ -1422,14 +1420,14 @@ export async function distillMemoryImpl(db: DB, userId: string, projectId: strin
     }
   }
 
-  await log(db, userId, projectId, STAGE.memory, `Memory distilled; ${expired} stale entries expired`, {
+  await log(db, userId, projectId, STAGE.paper, `Memory distilled; ${expired} stale entries expired`, {
     actor: "memory-agent",
   });
-  await db.from("projects").update({ status: "complete", stage: STAGE.memory }).eq("id", projectId);
+  await db.from("projects").update({ status: "complete", stage: STAGE.paper }).eq("id", projectId);
   return { expired };
 }
 
-/* --------------------------------- 16 ---------------------------------- */
+/* --------------------------------- Theory Branch ---------------------------------- */
 
 export async function theoryImpl(db: DB, userId: string, projectId: string) {
   const project = await loadProject(db, projectId);
@@ -1473,7 +1471,7 @@ export async function theoryImpl(db: DB, userId: string, projectId: string) {
     lab_required: (out.lab_required ?? []) as unknown as Json,
     agent_only: (out.agent_only ?? []) as unknown as Json,
   });
-  await log(db, userId, projectId, STAGE.theory, "Theory branch: theorems and analysis produced", {
+  await log(db, userId, projectId, STAGE.paper, "Theory branch: theorems and analysis produced", {
     actor: "theory-agent",
     detail: { lab_items: (out.lab_required ?? []).length },
   });
@@ -1486,14 +1484,13 @@ const HUMAN_GATES = new Set([STAGE.selection, STAGE.pseudocodeReview, STAGE.arch
 
 const STAGE_NAMES: Record<number, string> = {
   1: "Prompt", 2: "Research", 3: "Ideas", 4: "Selection", 5: "Idea Graph",
-  6: "Formulation", 7: "Pseudocode", 8: "Pseudocode Review", 9: "Code",
-  10: "Code Review", 11: "Execution", 12: "Results", 13: "Rerun",
-  14: "Architecture", 15: "Paper", 16: "Memory", 17: "Theory",
+  6: "Formulation", 7: "Pseudocode", 8: "Pseudocode Review", 9: "Code Generation",
+  10: "Execution", 11: "Results", 12: "Rerun", 13: "Architecture", 14: "Paper Generation",
 };
 
 const SUPERVISOR_PROMPT =
-  "You are the Supervisor Agent for a governed 17-stage AI research pipeline. " +
-  "You oversee 11 specialized agents. Your job is to validate outputs, find bugs, " +
+  "You are the Supervisor Agent for a governed 14-stage AI research pipeline. " +
+  "You oversee specialized agents. Your job is to validate outputs, find bugs, " +
   "ensure data completeness, and guide transitions. Be strict about data quality — " +
   "never allow hallucinated metrics, skipped parameters, or incomplete outputs. " +
   "When something is broken, identify the root cause and prescribe the fix. " +
@@ -1611,6 +1608,9 @@ async function supervisorEvaluateOutput(
 async function supervisorPlanTransition(
   db: DB, userId: string, projectId: string, currentStage: number,
 ): Promise<{ action: "advance" | "retry" | "fallback" | "wait_for_human"; targetStage: number; reasoning: string; agentBrief: string; confidence: number }> {
+  if (currentStage >= STAGE.paper) {
+    return { action: "wait_for_human", targetStage: STAGE.paper, reasoning: "Pipeline reached final stage (Paper Generation). Project complete.", agentBrief: "", confidence: 1.0 };
+  }
   if (HUMAN_GATES.has(currentStage as any)) {
     return { action: "wait_for_human", targetStage: currentStage, reasoning: `Stage ${currentStage} (${STAGE_NAMES[currentStage]}) is a human gate — awaiting approval.`, agentBrief: "", confidence: 1.0 };
   }
@@ -1664,6 +1664,10 @@ export async function supervisorAutoAdvance(
   try {
     const project = await loadProject(db, projectId);
     const currentStage = project.stage ?? STAGE.prompt;
+
+    if (currentStage >= STAGE.paper) {
+      return { advanced: false, fromStage: currentStage, toStage: null, decision: "complete", waitingForHuman: false, reasoning: "Pipeline reached final stage (Paper Generation). Project complete." };
+    }
 
     // 1. If at a human gate → wait
     if (HUMAN_GATES.has(currentStage as any)) {

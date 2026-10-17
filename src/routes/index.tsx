@@ -90,7 +90,7 @@ function Landing() {
               {/* Trust markers */}
               <div className="mt-10 grid grid-cols-3 gap-4 border-t border-border/70 pt-6 text-left">
                 <div>
-                  <div className="font-[family-name:var(--font-mono)] text-xl font-semibold text-foreground">17</div>
+                  <div className="font-[family-name:var(--font-mono)] text-xl font-semibold text-foreground">14</div>
                   <div className="text-[11px] text-muted-foreground mt-0.5">Sequential stages</div>
                 </div>
                 <div>
@@ -227,14 +227,14 @@ function Landing() {
         </div>
       </section>
 
-      {/* 16 Stages Interactive Overview */}
+      {/* 14 Stages Interactive Overview */}
       <section id="stages" className="py-20 border-b border-border/70">
         <div className="mx-auto max-w-6xl px-6">
           <div className="flex flex-wrap items-baseline justify-between gap-4">
             <div>
               <p className="rule-label">Sequential Execution</p>
               <h2 className="mt-2 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-                The 17 Governed Stages
+                The 14 Governed Stages
               </h2>
             </div>
             <div className="inline-flex rounded-[4px] border border-border bg-secondary/50 p-0.5 text-xs">
@@ -245,7 +245,7 @@ function Landing() {
                   filter === "all" ? "bg-primary text-primary-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                All (17)
+                All ({STAGES.length})
               </button>
               <button
                 type="button"
@@ -254,7 +254,7 @@ function Landing() {
                   filter === "gates" ? "bg-primary text-primary-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                Human gates (4)
+                Human gates ({STAGES.filter((s) => s.gate).length})
               </button>
               <button
                 type="button"
@@ -263,7 +263,7 @@ function Landing() {
                   filter === "guards" ? "bg-primary text-primary-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                Guardrails (5)
+                Guardrails ({STAGES.filter((s) => s.guard).length})
               </button>
             </div>
           </div>

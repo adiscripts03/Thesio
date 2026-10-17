@@ -181,8 +181,6 @@ function RunWorkspace() {
     decide: (args: { data: { projectId: string; approved: boolean; change: string } }) => apiCall("decide", args.data),
     paper: (args: { data: { projectId: string } }) => apiCall("paper", args.data),
     plagiarism: (args: { data: { projectId: string } }) => apiCall("plagiarism", args.data),
-    memory: (args: { data: { projectId: string } }) => apiCall("memory", args.data),
-    theory: (args: { data: { projectId: string } }) => apiCall("theory", args.data),
     supervisorStatus: (args: { data: { projectId: string } }) => apiCall("supervisorStatus", args.data),
     supervisorAdvance: (args: { data: { projectId: string } }) => apiCall("supervisorAdvance", args.data),
   };
@@ -219,7 +217,6 @@ function RunWorkspace() {
   const pseudo = latest("pseudocode");
   const code = latest("code");
   const paper = latest("paper");
-  const theory = latest("theory");
   const selected = ideas.find((i) => i.selected);
   const flagged = sources.filter((s) => s.injection_flag);
   const lastVersion = versions[versions.length - 1];
@@ -229,9 +226,6 @@ function RunWorkspace() {
   }
 
   const lineage = ((draft?.meta as { lineage?: string[] } | null)?.lineage ?? []) as string[];
-  const labItems = ((theory?.meta as { lab_required?: Array<{ claim: string; reason: string }> } | null)
-    ?.lab_required ?? []) as Array<{ claim: string; reason: string }>;
-  const agentOnly = ((theory?.meta as { agent_only?: string[] } | null)?.agent_only ?? []) as string[];
 
   return (
     <main className="mx-auto grid max-w-[1400px] gap-8 px-6 py-8 lg:grid-cols-[220px_minmax(0,1fr)_320px]">
@@ -608,27 +602,11 @@ function RunWorkspace() {
           {code ? <Mono>{code.content}</Mono> : <Empty>Approve the pseudocode to unlock code generation.</Empty>}
         </StageCard>
 
-        {/* 10 — Automated Code Audit (Human gate deleted) */}
+        {/* 10 — Sandboxed Execution */}
         <StageCard
           index={10}
           {...stageProps(10)}
           active={project.stage === 10}
-        >
-          {code ? (
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Chip tone="forest">Auto-Approved</Chip>
-              <span>Implementation validated — code review human gate deleted.</span>
-            </div>
-          ) : (
-            <Empty>Awaiting code generation.</Empty>
-          )}
-        </StageCard>
-
-        {/* 11 — Sandboxed Execution */}
-        <StageCard
-          index={11}
-          {...stageProps(11)}
-          active={project.stage === 11}
           actions={
             <Button
               disabled={pending === "execute" || !code}
@@ -654,8 +632,8 @@ function RunWorkspace() {
           )}
         </StageCard>
 
-        {/* 12, 13, 14 — Results, rerun, architecture */}
-        <StageCard index={12} {...stageProps(12)} active={project.stage === 12}>
+        {/* 11 — Results */}
+        <StageCard index={11} {...stageProps(11)} active={project.stage === 11}>
           {versions.length === 0 ? (
             <Empty>No results yet.</Empty>
           ) : (
@@ -721,10 +699,11 @@ function RunWorkspace() {
           )}
         </StageCard>
 
+        {/* 12 — Rerun Loop */}
         <StageCard
-          index={13}
-          {...stageProps(13)}
-          active={project.stage === 13}
+          index={12}
+          {...stageProps(12)}
+          active={project.stage === 12}
           actions={
             <Button
               variant="secondary"
@@ -738,10 +717,11 @@ function RunWorkspace() {
           <Empty>Each rerun is stored as its own version with a scorecard — nothing is overwritten.</Empty>
         </StageCard>
 
+        {/* 13 — Architecture Gate */}
         <StageCard
-          index={14}
-          {...stageProps(14)}
-          active={project.stage === 14}
+          index={13}
+          {...stageProps(13)}
+          active={project.stage === 13}
           actions={
             <Button
               variant="outline"
@@ -795,11 +775,11 @@ function RunWorkspace() {
           )}
         </StageCard>
 
-        {/* 15 — Paper */}
+        {/* 14 — Paper (Final Stage) */}
         <StageCard
-          index={15}
-          {...stageProps(15)}
-          active={project.stage === 15}
+          index={14}
+          {...stageProps(14)}
+          active={project.stage === 14}
           actions={
             <>
               <Button
@@ -970,73 +950,6 @@ function RunWorkspace() {
             </div>
           ) : (
             <Empty>A good result unlocks paper generation.</Empty>
-          )}
-        </StageCard>
-
-        {/* 16 — Strategic Memory */}
-        <StageCard
-          index={16}
-          {...stageProps(16)}
-          active={project.stage === 16}
-          actions={
-            <Button
-              variant="secondary"
-              disabled={pending === "memory"}
-              onClick={() => run("memory", () => call.memory({ data: { projectId: id } }), "Run distilled into memory")}
-            >
-              {pending === "memory" ? "Distilling…" : "Distil this run into memory"}
-            </Button>
-          }
-        >
-          <Empty>
-            Each distillation writes one durable lesson and decays older entries by 15%; anything below 0.2 weight
-            expires.
-          </Empty>
-        </StageCard>
-
-        {/* 17 — Theory */}
-        <StageCard
-          index={17}
-          {...stageProps(17)}
-          active={project.stage === 17}
-          actions={
-            <Button
-              variant="outline"
-              disabled={pending === "theory" || sources.length === 0}
-              onClick={() => run("theory", () => call.theory({ data: { projectId: id } }), "Theory branch complete")}
-            >
-              {pending === "theory" ? "Reasoning…" : "Run non-programming branch"}
-            </Button>
-          }
-        >
-          {!theory ? (
-            <Empty>Reason theorems and analysis directly from the evidence graph, without code.</Empty>
-          ) : (
-            <div className="space-y-4">
-              <Prose text={theory.content} />
-              <div className="grid gap-3 md:grid-cols-2">
-                <div className="rounded-sm border border-destructive/40 p-3">
-                  <p className="rule-label">Requires physical lab work</p>
-                  <ul className="mt-2 space-y-1 text-xs">
-                    {labItems.length === 0 && <li className="text-muted-foreground">None flagged.</li>}
-                    {labItems.map((l) => (
-                      <li key={l.claim}>
-                        <strong>{l.claim}</strong> — {l.reason}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                <div className="rounded-sm border border-forest/40 p-3">
-                  <p className="rule-label">Resolvable by the agent alone</p>
-                  <ul className="mt-2 space-y-1 text-xs">
-                    {agentOnly.length === 0 && <li className="text-muted-foreground">None listed.</li>}
-                    {agentOnly.map((a) => (
-                      <li key={a}>{a}</li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            </div>
           )}
         </StageCard>
       </div>

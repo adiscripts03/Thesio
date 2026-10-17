@@ -245,10 +245,10 @@ if __name__ == '__main__':
 
         elif action in ["execute", "review"]:
             project_id = data.get("projectId") or body.get("projectId", "")
-            c.execute("UPDATE projects SET stage = 11 WHERE id = ?", (project_id,))
-            c.execute("INSERT INTO audit_logs (project_id, user_id, stage, event, actor, severity) VALUES (?, 'dev-user-001', 11, 'Sandbox execution completed', 'system', 'info')", (project_id,))
+            c.execute("UPDATE projects SET stage = 10 WHERE id = ?", (project_id,))
+            c.execute("INSERT INTO audit_logs (project_id, user_id, stage, event, actor, severity) VALUES (?, 'dev-user-001', 10, 'Sandbox execution completed', 'system', 'info')", (project_id,))
             conn.commit()
-            return {"ok": True, "result": {"status": "success", "stage": 11}}
+            return {"ok": True, "result": {"status": "success", "stage": 10}}
 
         elif action == "paper":
             project_id = data.get("projectId") or body.get("projectId", "")
@@ -281,10 +281,10 @@ Autonomous experimentation verified formal statistical convergence with zero hum
                 """,
                 (project_id, paper_latex)
             )
-            c.execute("UPDATE projects SET stage = 15 WHERE id = ?", (project_id,))
-            c.execute("INSERT INTO audit_logs (project_id, user_id, stage, event, actor, severity) VALUES (?, 'dev-user-001', 15, 'Academic paper draft finalized', 'system', 'info')", (project_id,))
+            c.execute("UPDATE projects SET stage = 14, status = 'complete' WHERE id = ?", (project_id,))
+            c.execute("INSERT INTO audit_logs (project_id, user_id, stage, event, actor, severity) VALUES (?, 'dev-user-001', 14, 'Academic paper draft finalized', 'system', 'info')", (project_id,))
             conn.commit()
-            return {"ok": True, "result": {"status": "success", "stage": 15}}
+            return {"ok": True, "result": {"status": "success", "stage": 14}}
 
         else:
             return {"ok": True, "result": {"status": "success", "action": action}}

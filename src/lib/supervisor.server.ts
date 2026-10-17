@@ -1,9 +1,9 @@
 /**
- * Autonomous Supervisor Agent for the Intelibot Scribe 17-stage pipeline.
+ * Autonomous Supervisor Agent for the 14-stage pipeline.
  *
- * The supervisor monitors all 11 agents, validates outputs, finds bugs,
+ * The supervisor monitors agents, validates outputs, finds bugs,
  * handles retries/fallbacks, and auto-advances non-gate stages.
- * At human gates (4, 8, 10, 14) it provides recommendations but waits.
+ * At human gates (4, 8, 13) it provides recommendations but waits.
  */
 
 import { FIREWALL_SYSTEM, askJson, askText } from "./ai.server";
@@ -15,23 +15,22 @@ type DB = SupabaseClient<Database>;
 const STAGE = {
   prompt: 1, research: 2, ideas: 3, selection: 4, ideaGraph: 5,
   formulation: 6, pseudocode: 7, pseudocodeReview: 8, code: 9,
-  codeReview: 10, execution: 11, results: 12, rerun: 13,
-  architecture: 14, paper: 15, memory: 16, theory: 17,
+  execution: 10, results: 11, rerun: 12,
+  architecture: 13, paper: 14,
 } as const;
 
 const HUMAN_GATES = new Set([STAGE.selection, STAGE.pseudocodeReview, STAGE.architecture]);
 
 const STAGE_NAMES: Record<number, string> = {
   1: "Prompt", 2: "Research", 3: "Ideas", 4: "Selection", 5: "Idea Graph",
-  6: "Formulation", 7: "Pseudocode", 8: "Pseudocode Review", 9: "Code",
-  10: "Code Review", 11: "Execution", 12: "Results", 13: "Rerun",
-  14: "Architecture", 15: "Paper", 16: "Memory", 17: "Theory",
+  6: "Formulation", 7: "Pseudocode", 8: "Pseudocode Review", 9: "Code Generation",
+  10: "Execution", 11: "Results", 12: "Rerun", 13: "Architecture", 14: "Paper Generation",
 };
 
 const SUPERVISOR_PROMPT =
-  "You are the Supervisor Agent for a governed 17-stage AI research pipeline. " +
-  "You oversee 11 specialized agents. Your job is to validate outputs, find bugs, " +
-  "ensure data completeness, and guide transitions. Be strict about data quality â€” " +
+  "You are the Supervisor Agent for a governed 14-stage AI research pipeline. " +
+  "You oversee specialized agents. Your job is to validate outputs, find bugs, " +
+  "ensure data completeness, and guide transitions. Be strict about data quality — " +
   "never allow hallucinated metrics, skipped parameters, or incomplete outputs. " +
   "When something is broken, identify the root cause and prescribe the fix. " +
   "Reply with valid JSON only.";
@@ -171,6 +170,9 @@ export async function supervisorEvaluateOutput(
 export async function supervisorPlanTransition(
   db: DB, userId: string, projectId: string, currentStage: number,
 ): Promise<{ action: "advance" | "retry" | "fallback" | "wait_for_human"; targetStage: number; reasoning: string; agentBrief: string; confidence: number }> {
+  if (currentStage >= STAGE.paper) {
+    return { action: "wait_for_human", targetStage: STAGE.paper, reasoning: "Pipeline reached final stage (Paper Generation). Project complete.", agentBrief: "", confidence: 1.0 };
+  }
   if (HUMAN_GATES.has(currentStage as any)) {
     return { action: "wait_for_human", targetStage: currentStage, reasoning: `Stage ${currentStage} (${STAGE_NAMES[currentStage]}) is a human gate — awaiting approval.`, agentBrief: "", confidence: 1.0 };
   }
@@ -299,7 +301,11 @@ export async function supervisorAutoAdvance(
 
     const currentStage = project.stage ?? STAGE.prompt;
 
-    // 1. If at a human gate â†’ wait
+    if (currentStage >= STAGE.paper) {
+      return { advanced: false, fromStage: currentStage, toStage: null, decision: "complete", waitingForHuman: false, reasoning: "Pipeline reached final stage (Paper Generation). Project complete." };
+    }
+
+    // 1. If at a human gate → wait
     if (HUMAN_GATES.has(currentStage as any)) {
       const reasoning = `Stage ${currentStage} (${STAGE_NAMES[currentStage]}) requires human approval. Supervisor is providing recommendations but waiting.`;
       await logAudit(db, userId, projectId, currentStage, reasoning, "gate", {});

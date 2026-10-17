@@ -26,7 +26,7 @@ export const STAGES: StageDef[] = [
   { name: "Idea selection", blurb: "Follow, modify, or author your own idea.", gate: true, agent: "user" },
   {
     name: "Idea graph",
-    blurb: "Interactive graph showing how your idea connects to the rest of the field â€” gaps, and risks.",
+    blurb: "Interactive graph showing how your idea connects to the rest of the field — gaps, and risks.",
     agent: "graph-agent",
     supervised: true,
   },
@@ -34,7 +34,6 @@ export const STAGES: StageDef[] = [
   { name: "Pseudocode", blurb: "Language-agnostic pseudocode from the formulation.", agent: "codegen-agent", supervised: true },
   { name: "Pseudocode review", blurb: "Approve or edit before any code exists.", gate: true, agent: "user" },
   { name: "Code generation", blurb: "Real implementation from approved pseudocode.", agent: "codegen-agent", supervised: true },
-  { name: "Code audit", blurb: "Automated syntax and audit check — human review gate deleted.", guard: true, agent: "audit-agent", supervised: true },
   {
     name: "Sandboxed execution",
     blurb: "Isolated container, network denied, resource + time limits, full command audit log.",
@@ -58,6 +57,4 @@ export const STAGES: StageDef[] = [
     agent: "strategy-agent",
   },
   { name: "Paper generation", blurb: "Citations, methodology, LaTeX template, full sections.", agent: "writing-agent", supervised: true },
-  { name: "Strategic memory", blurb: "Runs distilled forward, older memory decays and expires.", guard: true, agent: "memory-agent", supervised: true },
-  { name: "Theory branch", blurb: "Theorems and analysis without code; flags physical lab work.", agent: "theory-agent", supervised: true },
 ];

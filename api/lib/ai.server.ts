@@ -1,8 +1,8 @@
 // Gemma 4 LLM Gateway Configuration - Hacktoberfest Hack Day x AWS SBG RTMSSU
 const GATEWAY = process.env["LLM_BASE_URL"] || 
-  (process.env["USE_LOCAL_LLM"] === "true" || !process.env["GEMMA_API_KEY"]
+  (process.env["USE_LOCAL_LLM"] === "true" || (!process.env["GEMMA_API_KEY"] && !process.env["GEMINI_API_KEY"]))
     ? "http://localhost:11434/v1/chat/completions" 
-    : "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions");
+    : "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
 
 export const DEFAULT_MODEL = process.env["LLM_MODEL"] || 
   process.env["GEMMA_MODEL"] || 

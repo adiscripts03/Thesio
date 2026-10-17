@@ -1,0 +1,8 @@
+venv
+.venv
+backend/venv
+node_modules
+.output
+.git
+.env
+*.env

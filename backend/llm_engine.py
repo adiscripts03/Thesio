@@ -43,36 +43,40 @@ def is_ollama_online(url: str = "http://localhost:11434/api/tags") -> bool:
 
 def get_llm_config():
     """
-    Intelligently resolves local Gemma 4 vs hosted Cloud API:
-    1. If USE_LOCAL_LLM is true or Ollama is online -> uses local gemma4:12b.
-    2. If hosted / Ollama is not online -> uses Google Gemma / Gemini Cloud API.
+    Intelligently resolves local Gemma 4 vs hosted Groq/Gemini Cloud API:
+    1. If USE_LOCAL_LLM is true or Ollama is online -> uses local gemma4:12b via Ollama.
+    2. If Groq API key is set -> uses Groq high-speed cloud inference.
+    3. Else falls back to Google Gemma / Gemini Cloud API.
     """
-    api_key = (
-        os.getenv("GEMMA_API_KEY")
-        or os.getenv("GEMMA_4_API_KEY")
-        or os.getenv("GEMINI_API_KEY")
-        or os.getenv("LLM_API_KEY")
-        or os.getenv("GROQ_API_KEY")
-        or ""
-    )
+    groq_key = os.getenv("GROQ_API_KEY")
+    gemini_key = os.getenv("GEMINI_API_KEY")
+    gemma_key = os.getenv("GEMMA_API_KEY") or os.getenv("GEMMA_4_API_KEY")
     base_url = os.getenv("LLM_BASE_URL")
     
     # Check if local Ollama is available
-    local_active = USE_LOCAL_LLM and is_ollama_online()
+    local_active = USE_LOCAL_LLM or is_ollama_online()
 
     if not base_url:
         if local_active:
             base_url = "http://localhost:11434/v1/chat/completions"
+        elif groq_key:
+            base_url = "https://api.groq.com/openai/v1/chat/completions"
         else:
             base_url = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
 
     is_local = "localhost" in base_url or "127.0.0.1" in base_url
-    token = api_key if api_key else ("ollama" if is_local else "")
-    model = (
-        os.getenv("LLM_MODEL") 
-        or os.getenv("GEMMA_MODEL") 
-        or ("gemma4:12b" if is_local else "gemma-2-27b-it")
-    )
+    is_groq = "groq.com" in base_url
+
+    if is_local:
+        token = "ollama"
+        model = os.getenv("LLM_MODEL") or os.getenv("GEMMA_MODEL") or "gemma4:12b"
+    elif is_groq:
+        token = groq_key or ""
+        model = os.getenv("GROQ_MODEL") or os.getenv("LLM_MODEL") or "llama-3.3-70b-versatile"
+    else:
+        token = gemma_key or gemini_key or ""
+        model = os.getenv("LLM_MODEL") or os.getenv("GEMMA_MODEL") or "gemma-2-27b-it"
+
     return base_url, token, is_local, model
 
 def _call_gemini_fallback(prompt: str, system_prompt: str, require_json: bool, api_key: str) -> str:
@@ -164,21 +168,33 @@ def call_llm(
             except Exception as e_gemini:
                 logger.error(f"Gemini fallback failed: {e_gemini}")
 
-        # Check if legacy Groq client is configured and available
+        # Check if Groq fallback is configured and available (direct HTTP)
         groq_key = os.getenv("GROQ_API_KEY")
-        if groq_key and Groq is not None:
+        if groq_key:
             try:
-                logger.info("Attempting legacy Groq fallback...")
-                client = Groq(api_key=groq_key)
-                completion = client.chat.completions.create(
-                    messages=messages,
-                    model=os.getenv("GROQ_MODEL", "openai/gpt-oss-120b"),
+                logger.info("Attempting Groq HTTP fallback...")
+                groq_model = os.getenv("GROQ_MODEL") or "llama-3.3-70b-versatile"
+                groq_payload: Dict[str, Any] = {
+                    "model": groq_model,
+                    "messages": messages,
+                    "max_tokens": 4096,
+                }
+                if require_json:
+                    groq_payload["response_format"] = {"type": "json_object"}
+                groq_res = requests.post(
+                    "https://api.groq.com/openai/v1/chat/completions",
+                    headers={"Content-Type": "application/json", "Authorization": f"Bearer {groq_key}"},
+                    json=groq_payload,
+                    timeout=60,
                 )
-                return completion.choices[0].message.content or ""
+                if groq_res.ok:
+                    groq_data = groq_res.json()
+                    return groq_data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                logger.warning(f"Groq HTTP fallback error ({groq_res.status_code}): {groq_res.text[:150]}")
             except Exception as e_groq:
-                logger.error(f"Legacy Groq fallback failed: {e_groq}")
+                logger.error(f"Groq fallback failed: {e_groq}")
 
-        raise ValueError(f"Gemma 4 call failed: {e}")
+        raise ValueError(f"LLM call failed across all providers: {e}")
 
 def extract_json(raw: str) -> dict:
     """Safely extracts and parses JSON from an LLM response even if fenced in markdown or with LaTeX escapes."""

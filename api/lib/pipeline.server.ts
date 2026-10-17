@@ -555,7 +555,7 @@ export async function pseudocodeImpl(db: DB, userId: string, projectId: string) 
       content:
         `Write rigorous, language-agnostic pseudocode for this method. Number every line, declare inputs/outputs, ` +
         `state complexity, and mark hyperparameters explicitly as HP[...]. Return pseudocode only, in a plain code block.\n\n` +
-        `Idea: ${idea.title}\n\n${draft.content.slice(0, 8000)}`,
+        `Idea: ${idea.title}\n\n${draft.content.slice(0, 3500)}`,
     },
   ]);
 

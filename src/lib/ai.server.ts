@@ -1,34 +1,54 @@
-// Gemma 4 LLM Gateway Configuration - Hacktoberfest Hack Day x AWS SBG RTMSSU
-const GATEWAY = process.env["LLM_BASE_URL"] || 
-  (process.env["USE_LOCAL_LLM"] === "true" || (!process.env["GEMMA_API_KEY"] && !process.env["GEMINI_API_KEY"]))
-    ? "http://localhost:11434/v1/chat/completions" 
-    : "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
+// Multi-Provider LLM Gateway: Local Gemma 4 (Ollama) -> Groq API -> Gemini API
+function getGatewayConfig() {
+  const useLocal = process.env["USE_LOCAL_LLM"] === "true";
+  const customUrl = process.env["LLM_BASE_URL"];
+  const groqKey = process.env["GROQ_API_KEY"];
+  const gemmaKey = process.env["GEMMA_API_KEY"] || process.env["GEMMA_4_API_KEY"];
+  const geminiKey = process.env["GEMINI_API_KEY"];
+
+  if (customUrl) {
+    return {
+      url: customUrl,
+      provider: customUrl.includes("localhost") || customUrl.includes("127.0.0.1") ? "ollama" : "openai-compatible",
+      key: gemmaKey || groqKey || geminiKey || "ollama",
+    };
+  }
+
+  if (useLocal) {
+    return {
+      url: "http://localhost:11434/v1/chat/completions",
+      provider: "ollama",
+      key: "ollama",
+    };
+  }
+
+  // If Groq is provided, use Groq's high-speed, high-rate-limit endpoint
+  if (groqKey) {
+    return {
+      url: "https://api.groq.com/openai/v1/chat/completions",
+      provider: "groq",
+      key: groqKey,
+    };
+  }
+
+  // Google Gemini/Gemma Cloud
+  return {
+    url: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+    provider: "google",
+    key: gemmaKey || geminiKey || "",
+  };
+}
 
 export const DEFAULT_MODEL = process.env["LLM_MODEL"] || 
+  process.env["GROQ_MODEL"] || 
   process.env["GEMMA_MODEL"] || 
-  "gemma4:12b";
+  (process.env["USE_LOCAL_LLM"] === "true" ? "gemma4:12b" : (process.env["GROQ_API_KEY"] ? "llama-3.3-70b-versatile" : "gemma4:12b"));
 
-export const FALLBACK_MODEL = process.env["GEMMA_FALLBACK_MODEL"] || 
+export const FALLBACK_MODEL = process.env["GROQ_FALLBACK_MODEL"] || 
   process.env["LLM_FALLBACK_MODEL"] || 
-  "gemma4:12b";
+  (process.env["GROQ_API_KEY"] ? "llama-3.1-8b-instant" : "gemma4:12b");
 
 export type ChatMessage = { role: "system" | "user" | "assistant"; content: string };
-
-function apiKey(): string {
-  if (GATEWAY.includes("localhost") || GATEWAY.includes("127.0.0.1")) {
-    return process.env["GEMMA_API_KEY"] || process.env["GEMMA_4_API_KEY"] || "ollama";
-  }
-  const key = process.env["GEMMA_API_KEY"] || 
-    process.env["GEMMA_4_API_KEY"] || 
-    process.env["GEMINI_API_KEY"] || 
-    process.env["LLM_API_KEY"] || 
-    process.env["GROQ_API_KEY"] || 
-    "";
-  if (!key) {
-    throw new Error("AI is not configured for this workspace. Please set GEMMA_API_KEY or configure local Gemma 4.");
-  }
-  return key;
-}
 
 function estimateTokens(text: string): number {
   return Math.ceil(text.length / 3.5);
@@ -38,22 +58,51 @@ function truncateMessagesForTpm(messages: ChatMessage[], maxTotalBudget: number 
   let totalPromptTokens = messages.reduce((acc, m) => acc + estimateTokens(m.content), 0);
   
   const trimmed = messages.map(m => ({ ...m }));
-  if (totalPromptTokens > 4000) {
-    // Trim user message if it's too large, but preserve head and tail
+  if (totalPromptTokens > 3500) {
     for (const msg of trimmed) {
-      if (msg.role === "user" && estimateTokens(msg.content) > 3000) {
-        const head = msg.content.slice(0, 4500);
-        const tail = msg.content.slice(-3500);
+      if (msg.role === "user" && estimateTokens(msg.content) > 2500) {
+        const head = msg.content.slice(0, 3500);
+        const tail = msg.content.slice(-2500);
         msg.content = `${head}\n\n[... content truncated to fit token limits ...]\n\n${tail}`;
       }
     }
     totalPromptTokens = trimmed.reduce((acc, m) => acc + estimateTokens(m.content), 0);
   }
 
-  // Allocate remaining tokens for output up to the TPM cap
-  // Increased from 3500 to 8192 to prevent the paper from being truncated before the bibliography is generated
   const availableMaxTokens = Math.max(1024, Math.min(8192, maxTotalBudget - totalPromptTokens));
   return { trimmed, availableMaxTokens };
+}
+
+async function callGroqFallback(messages: ChatMessage[], jsonMode: boolean = false) {
+  const groqKey = process.env["GROQ_API_KEY"];
+  if (!groqKey) throw new Error("GROQ_API_KEY is not configured.");
+  const model = process.env["GROQ_MODEL"] || "llama-3.3-70b-versatile";
+  
+  const body: Record<string, unknown> = {
+    model,
+    messages,
+    max_tokens: 4096,
+  };
+  if (jsonMode) {
+    body.response_format = { type: "json_object" };
+  }
+
+  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${groqKey}`,
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Groq API error (${res.status}): ${text.slice(0, 300)}`);
+  }
+
+  const json = await res.json();
+  return json as { choices?: Array<{ message?: { content?: string } }> };
 }
 
 async function callGemini(messages: ChatMessage[]) {
@@ -84,9 +133,10 @@ async function callGemini(messages: ChatMessage[]) {
 }
 
 async function post(body: Record<string, unknown>, modelOverride?: string) {
+  const gateway = getGatewayConfig();
   const modelToUse = modelOverride || DEFAULT_MODEL;
   const messages = (body.messages as ChatMessage[]) || [];
-  const isLocal = GATEWAY.includes("localhost") || GATEWAY.includes("127.0.0.1");
+  const isLocal = gateway.provider === "ollama";
 
   const { trimmed, availableMaxTokens } = isLocal 
     ? { trimmed: messages, availableMaxTokens: 8192 } 
@@ -104,31 +154,53 @@ async function post(body: Record<string, unknown>, modelOverride?: string) {
   };
 
   try {
-    const res = await fetch(GATEWAY, {
+    const res = await fetch(gateway.url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey()}`,
+        Authorization: `Bearer ${gateway.key}`,
       },
       body: JSON.stringify(payload),
     });
 
     if ((res.status === 429 || res.status === 413) && modelToUse !== FALLBACK_MODEL) {
-      console.warn(`Gemma API limit (${res.status}) on ${modelToUse}. Retrying automatically with ${FALLBACK_MODEL}...`);
+      console.warn(`Primary LLM limit (${res.status}) on ${modelToUse}. Retrying with fallback model ${FALLBACK_MODEL}...`);
       await new Promise((r) => setTimeout(r, 1000));
       return post(body, FALLBACK_MODEL);
     }
 
     if (!res.ok) {
-      console.warn(`Gemma API request failed (${res.status}). Falling back to Gemini...`);
-      return await callGemini(trimmed);
+      const errText = await res.text();
+      console.warn(`Primary LLM request failed (${res.status}): ${errText.slice(0, 150)}. Attempting fallback...`);
+      // 1. Try Groq fallback if not already using Groq
+      if (gateway.provider !== "groq" && process.env["GROQ_API_KEY"]) {
+        return await callGroqFallback(trimmed, !!body.response_format);
+      }
+      // 2. Try Gemini fallback
+      if (process.env["GEMINI_API_KEY"]) {
+        return await callGemini(trimmed);
+      }
+      throw new Error(`LLM Error (${res.status}): ${errText.slice(0, 200)}`);
     }
+
     return (await res.json()) as {
       choices?: Array<{ message?: { content?: string } }>;
     };
-  } catch (err) {
-    console.warn(`Gemma API error: ${err}. Falling back to Gemini...`);
-    return await callGemini(trimmed);
+  } catch (err: any) {
+    console.warn(`Primary LLM error: ${err?.message || err}. Attempting fallback provider...`);
+    // 1. Try Groq fallback if configured
+    if (gateway.provider !== "groq" && process.env["GROQ_API_KEY"]) {
+      try {
+        return await callGroqFallback(trimmed, !!body.response_format);
+      } catch (eGroq) {
+        console.warn("Groq fallback also failed:", eGroq);
+      }
+    }
+    // 2. Try Gemini fallback if configured
+    if (process.env["GEMINI_API_KEY"]) {
+      return await callGemini(trimmed);
+    }
+    throw err;
   }
 }
 

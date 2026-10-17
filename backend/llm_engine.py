@@ -33,8 +33,20 @@ GEMMA_MODEL = os.getenv("LLM_MODEL") or os.getenv("GEMMA_MODEL") or "gemma4:12b"
 GEMMA_FALLBACK_MODEL = os.getenv("LLM_FALLBACK_MODEL") or os.getenv("GEMMA_FALLBACK_MODEL") or "gemma4:12b"
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
 
+def is_ollama_online(url: str = "http://localhost:11434/api/tags") -> bool:
+    """Checks if local Ollama daemon is actively reachable."""
+    try:
+        r = requests.get(url, timeout=0.8)
+        return r.status_code == 200
+    except Exception:
+        return False
+
 def get_llm_config():
-    """Resolves base URL, API key, and locality for Gemma 4 inference."""
+    """
+    Intelligently resolves local Gemma 4 vs hosted Cloud API:
+    1. If USE_LOCAL_LLM is true or Ollama is online -> uses local gemma4:12b.
+    2. If hosted / Ollama is not online -> uses Google Gemma / Gemini Cloud API.
+    """
     api_key = (
         os.getenv("GEMMA_API_KEY")
         or os.getenv("GEMMA_4_API_KEY")
@@ -44,15 +56,24 @@ def get_llm_config():
         or ""
     )
     base_url = os.getenv("LLM_BASE_URL")
+    
+    # Check if local Ollama is available
+    local_active = USE_LOCAL_LLM and is_ollama_online()
+
     if not base_url:
-        if USE_LOCAL_LLM or not api_key:
+        if local_active:
             base_url = "http://localhost:11434/v1/chat/completions"
         else:
             base_url = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
 
     is_local = "localhost" in base_url or "127.0.0.1" in base_url
     token = api_key if api_key else ("ollama" if is_local else "")
-    return base_url, token, is_local
+    model = (
+        os.getenv("LLM_MODEL") 
+        or os.getenv("GEMMA_MODEL") 
+        or ("gemma4:12b" if is_local else "gemma-2-27b-it")
+    )
+    return base_url, token, is_local, model
 
 def _call_gemini_fallback(prompt: str, system_prompt: str, require_json: bool, api_key: str) -> str:
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent?key={api_key}"
@@ -86,8 +107,8 @@ def call_llm(
         messages.append({"role": "system", "content": system_prompt})
     messages.append({"role": "user", "content": prompt})
 
-    base_url, api_key, is_local = get_llm_config()
-    model = model_override or GEMMA_MODEL
+    base_url, api_key, is_local, auto_model = get_llm_config()
+    model = model_override or auto_model
 
     headers = {
         "Content-Type": "application/json",

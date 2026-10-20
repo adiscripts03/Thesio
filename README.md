@@ -178,7 +178,7 @@ sequenceDiagram
     participant UI as Studio UI
     participant Sup as Supervisor Governor
     participant Agent as Specialized Agent
-    participant Box as Sandbox Container
+    participant Sandbox as Sandbox Container
     participant Ver as Claim Verifier
 
     User->>UI: Submit Research Prompt (Vague/Detailed)
@@ -205,8 +205,8 @@ sequenceDiagram
 
     Sup->>Agent: Stage 9: Generate Executable Python Code
     Agent->>Sup: AST Static Analysis Passed
-    Sup->>Box: Stage 10: Execute in Isolated Air-Gapped Sandbox
-    Box-->>Sup: STDOUT, STDERR & JSON Metrics
+    Sup->>Sandbox: Stage 10: Execute in Isolated Air-Gapped Sandbox
+    Sandbox-->>Sup: STDOUT, STDERR & JSON Metrics
     Sup->>Ver: Stage 11: Validate Empirical Metrics & Baselines
     Ver-->>Sup: Claim Verification Passed
 

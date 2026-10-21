@@ -1,4 +1,3 @@
-// Multi-Provider LLM Gateway: Local Gemma 4 (Ollama) -> Groq API -> Gemini API
 function getGatewayConfig() {
   const useLocal = process.env["USE_LOCAL_LLM"] === "true";
   const customUrl = process.env["LLM_BASE_URL"];
@@ -22,7 +21,6 @@ function getGatewayConfig() {
     };
   }
 
-  // If Groq is provided, use Groq's high-speed, high-rate-limit endpoint
   if (groqKey) {
     return {
       url: "https://api.groq.com/openai/v1/chat/completions",
@@ -31,7 +29,6 @@ function getGatewayConfig() {
     };
   }
 
-  // Google Gemini/Gemma Cloud
   return {
     url: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
     provider: "google",
@@ -186,11 +183,9 @@ async function post(body: Record<string, unknown>, modelOverride?: string) {
     if (!res.ok) {
       const errText = await res.text();
       console.warn(`Primary LLM request failed (${res.status}): ${errText.slice(0, 150)}. Attempting fallback...`);
-      // 1. Try Groq fallback if not already using Groq
       if (gateway.provider !== "groq" && process.env["GROQ_API_KEY"]) {
         return await callGroqFallback(trimmed, !!body.response_format);
       }
-      // 2. Try Gemini fallback
       if (process.env["GEMINI_API_KEY"]) {
         return await callGemini(trimmed);
       }
@@ -202,7 +197,6 @@ async function post(body: Record<string, unknown>, modelOverride?: string) {
     };
   } catch (err: any) {
     console.warn(`Primary LLM error: ${err?.message || err}. Attempting fallback provider...`);
-    // 1. Try Groq fallback if configured
     if (gateway.provider !== "groq" && process.env["GROQ_API_KEY"]) {
       try {
         return await callGroqFallback(trimmed, !!body.response_format);
@@ -210,7 +204,6 @@ async function post(body: Record<string, unknown>, modelOverride?: string) {
         console.warn("Groq fallback also failed:", eGroq);
       }
     }
-    // 2. Try Gemini fallback if configured
     if (process.env["GEMINI_API_KEY"]) {
       return await callGemini(trimmed);
     }
@@ -235,15 +228,12 @@ function extractJson(raw: string): string {
 }
 
 function sanitizeJsonString(str: string): string {
-  // Replace invalid escapes: backslash not followed by ", \, /, b, f, n, r, t, or uXXXX (common with LaTeX)
   let fixed = str.replace(/\\(?!["\\/bfnrt]|u[0-9a-fA-F]{4})/g, "\\\\");
-  // Remove trailing commas before closing brackets
   fixed = fixed.replace(/,(\s*[\]}])/g, "$1");
   return fixed;
 }
 
 export async function askJson<T>(messages: ChatMessage[], fallback: T): Promise<T> {
-  // Add explicit formatting reminder to prevent LaTeX math output
   const sanitizedMessages: ChatMessage[] = messages.map((m, idx) => {
     if (idx === 0 && m.role === "system") {
       return {

@@ -35,7 +35,6 @@ function Landing() {
 
   return (
     <div className="grain min-h-screen flex flex-col bg-background text-foreground">
-      {/* Top Navbar */}
       <header className="sticky top-0 z-30 border-b border-border/80 bg-background/90 backdrop-blur-md">
         <div className="mx-auto flex max-w-[1400px] items-center justify-between px-6 py-3.5">
           <Link to="/" className="group flex items-baseline gap-2">
@@ -57,11 +56,9 @@ function Landing() {
         </div>
       </header>
 
-      {/* Hero Section */}
       <section className="relative overflow-hidden border-b border-border/70 py-20 md:py-28">
         <div className="mx-auto max-w-6xl px-6">
           <div className="grid gap-12 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
-            {/* Left copy */}
             <div>
               <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3.5 py-1 text-[11px] font-medium text-primary">
                 <span className="inline-block h-2 w-2 rounded-full bg-primary animate-pulse" />
@@ -87,7 +84,6 @@ function Landing() {
                 </Link>
               </div>
 
-              {/* Trust markers */}
               <div className="mt-10 grid grid-cols-3 gap-4 border-t border-border/70 pt-6 text-left">
                 <div>
                   <div className="font-[family-name:var(--font-mono)] text-xl font-semibold text-foreground">14</div>
@@ -104,7 +100,6 @@ function Landing() {
               </div>
             </div>
 
-            {/* Right preview artifact */}
             <div className="relative">
               <div className="paper overflow-hidden p-6 shadow-md border border-border bg-card">
                 <div className="flex items-center justify-between border-b border-border/70 pb-3">
@@ -167,7 +162,6 @@ function Landing() {
         </div>
       </section>
 
-      {/* Architecture Foundations */}
       <section id="architecture" className="py-20 border-b border-border/70">
         <div className="mx-auto max-w-6xl px-6">
           <p className="rule-label text-muted-foreground">Foundational Pillars</p>
@@ -227,7 +221,6 @@ function Landing() {
         </div>
       </section>
 
-      {/* 14 Stages Interactive Overview */}
       <section id="stages" className="py-20 border-b border-border/70">
         <div className="mx-auto max-w-6xl px-6">
           <div className="flex flex-wrap items-baseline justify-between gap-4">
@@ -299,7 +292,6 @@ function Landing() {
         </div>
       </section>
 
-      {/* Ready Call To Action */}
       <section className="py-20 text-center">
         <div className="mx-auto max-w-2xl px-6">
           <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
@@ -320,7 +312,6 @@ function Landing() {
         </div>
       </section>
 
-      {/* Footer */}
       <footer className="mt-auto border-t border-border/70 bg-card/60 py-6 text-xs text-muted-foreground">
         <div className="mx-auto flex max-w-[1400px] flex-wrap items-center justify-between gap-4 px-6">
           <div className="flex items-center gap-2">

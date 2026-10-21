@@ -7,10 +7,6 @@ logger = logging.getLogger(__name__)
 
 _model = None
 
-# --- Pure-Python / numpy MurmurHash3 (x86_32, seed=0) ---
-# Bit-for-bit equivalent to sklearn's HashingVectorizer(n_features=384, norm='l2')
-# with default alternate_sign=True. Reimplemented so we don't need to bundle
-# scikit-learn + scipy (~200MB) into the serverless function just for this.
 _TOKEN_PATTERN = re.compile(r"(?u)\b\w\w+\b")
 
 
@@ -112,7 +108,6 @@ def is_prompt_safe(prompt: str) -> dict:
     if not prompt or not prompt.strip():
         return {"safe": True, "score": 0.0, "reason": "Empty prompt"}
 
-    # 1. Quick heuristic keywords for prompt injection / system override
     malicious_patterns = [
         r"ignore previous instructions",
         r"bypass security firewall",
@@ -128,7 +123,6 @@ def is_prompt_safe(prompt: str) -> dict:
                 "reason": "Malicious pattern matched security policy rules.",
             }
 
-    # 2. XGBoost Model Evaluation
     model = get_model()
     if model is not None:
         try:

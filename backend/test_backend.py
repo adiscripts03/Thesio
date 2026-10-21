@@ -1,7 +1,6 @@
 import os
 import sys
 
-# Add backend to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from backend.llm_engine import call_llm

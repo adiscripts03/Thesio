@@ -30,7 +30,6 @@ class AdversarialReviewer:
                 if isinstance(node, ast.Call) and getattr(node.func, "id", "") == "train_test_split":
                     has_split = True
                 
-                # Check for fit_transform on test data
                 if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
                     if node.func.attr == "fit_transform":
                         for arg in node.args:
@@ -55,7 +54,6 @@ class AdversarialReviewer:
         accuracies = []
         
         for seed in seeds:
-            # We inject the seed dynamically at the top of the code to ensure randomness is controlled
             injected_code = f"import numpy as np; np.random.seed({seed})\nimport torch; torch.manual_seed({seed})\n{code}"
             try:
                 res = run_with_baselines(injected_code)

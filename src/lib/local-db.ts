@@ -159,7 +159,6 @@ function parseJsonValue(val: any) {
   return val;
 }
 
-/** Fields that must remain as raw strings even if they look like JSON. */
 const TEXT_FIELDS = new Set([
   "content", "review_notes", "prompt", "title", "summary", "abstract",
   "event", "lesson", "rationale", "reasoning", "reason", "injection_detail",
@@ -173,7 +172,6 @@ function rowToJson(row: any) {
     if (k === "injection_flag" || k === "requires_lab" || k === "selected" || k === "architecture_change" || k === "rolled_back") {
       out[k] = Boolean(v);
     } else if (TEXT_FIELDS.has(k)) {
-      // Keep as-is — these are rendered as strings in the UI
       out[k] = v;
     } else {
       out[k] = parseJsonValue(v);
@@ -254,7 +252,6 @@ export function insertLocalRow(table: string, row: Record<string, any>) {
     rowCopy.id = crypto.randomUUID();
   }
 
-  // Convert complex fields to JSON strings and undefined to null
   for (const [k, v] of Object.entries(rowCopy)) {
     if (v === undefined) {
       rowCopy[k] = null;
@@ -342,9 +339,6 @@ export function deleteLocalRows(table: string, filters: Record<string, any>) {
   }
 }
 
-/**
- * Creates a Supabase-compatible QueryBuilder proxy around intelibot.db
- */
 export function createLocalDbAdapter() {
   return {
     from: (table: string) => {
@@ -530,9 +524,6 @@ export function createLocalDbAdapter() {
   };
 }
 
-/**
- * Handles PostgREST-style HTTP requests from supabase-js
- */
 export function handlePostgRestRequest(
   pathname: string,
   searchParams: URLSearchParams,
@@ -540,7 +531,6 @@ export function handlePostgRestRequest(
   headers: Record<string, string>,
   body: any
 ) {
-  // pathname is like /rest/v1/projects or /projects
   const segments = pathname.split("/").filter(Boolean);
   const table = segments[segments.length - 1];
 

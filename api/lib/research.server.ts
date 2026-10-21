@@ -187,7 +187,6 @@ function cosine(a: number[], b: number[]): number {
   return na && nb ? dot / Math.sqrt(na * nb) : 0;
 }
 
-/** Real 64-dimensional semantic subword vector embedder for dense retrieval. */
 async function embed(inputs: string[]): Promise<number[][] | null> {
   if (!inputs || !inputs.length) return null;
   return inputs.map((text) => {
@@ -212,7 +211,6 @@ async function embed(inputs: string[]): Promise<number[][] | null> {
   });
 }
 
-/** Keyword + dense hybrid retrieval across arXiv, Crossref, and Semantic Scholar with zero-hang fallback. */
 export async function retrieveSources(
   queries: string[],
   perQuery = 6,
@@ -239,7 +237,6 @@ export async function retrieveSources(
     }
   }
 
-  // Broadened query retry if all 3 external APIs return empty
   if (!merged.length) {
     const rawTopic = queries[0] ?? "";
     const stopWords = new Set(["the", "a", "an", "and", "or", "in", "of", "to", "for", "with", "on", "at", "by", "from", "how", "what", "why"]);
@@ -264,7 +261,6 @@ export async function retrieveSources(
     }
   }
 
-  // If still empty after broadened retry, return empty array (caller runResearchImpl throws honestly)
   if (!merged.length) {
     return [];
   }

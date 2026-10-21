@@ -9,7 +9,6 @@ function pipelineDevServerPlugin(): Plugin {
         const url = req.url || "";
         const pathname = url.split("?")[0];
 
-        // 1. Intercept /api/pipeline POST requests
         if (pathname === "/api/pipeline" && req.method === "POST") {
           let rawBody = "";
           req.on("data", (chunk) => {
@@ -33,7 +32,6 @@ function pipelineDevServerPlugin(): Plugin {
           return;
         }
 
-        // 2. Intercept PostgREST-style requests for local database (/rest/v1/* or /api/rest/*)
         if (pathname && (pathname.startsWith("/rest/v1/") || pathname.startsWith("/api/rest/"))) {
           let rawBody = "";
           req.on("data", (chunk) => {
@@ -64,7 +62,6 @@ function pipelineDevServerPlugin(): Plugin {
           return;
         }
 
-        // 3. Fallthrough to default Vite handling
         next();
       });
     },

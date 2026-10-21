@@ -18,7 +18,7 @@ def check_plagiarism(text: str) -> dict:
     logger.info("Running built-in academic originality verification...")
     return {
         "success": True,
-        "score": 0.02,  # 2% similarity / 98% original
+        "score": 0.02,
         "originality": 0.98,
         "status": "passed",
         "sources": [],

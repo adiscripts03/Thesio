@@ -18,7 +18,6 @@ def init_db():
     conn = get_connection()
     c = conn.cursor()
     
-    # Projects
     c.execute('''
         CREATE TABLE IF NOT EXISTS projects (
             id TEXT PRIMARY KEY,
@@ -34,7 +33,6 @@ def init_db():
         )
     ''')
 
-    # Sources
     c.execute('''
         CREATE TABLE IF NOT EXISTS sources (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -56,7 +54,6 @@ def init_db():
         )
     ''')
 
-    # Ideas
     c.execute('''
         CREATE TABLE IF NOT EXISTS ideas (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -73,7 +70,6 @@ def init_db():
         )
     ''')
 
-    # Artifacts (Drafts, Pseudocode, Code, Paper)
     c.execute('''
         CREATE TABLE IF NOT EXISTS artifacts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -89,7 +85,6 @@ def init_db():
         )
     ''')
 
-    # Experiment Versions (Reruns)
     c.execute('''
         CREATE TABLE IF NOT EXISTS experiment_versions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -110,7 +105,6 @@ def init_db():
         )
     ''')
 
-    # Audit Logs
     c.execute('''
         CREATE TABLE IF NOT EXISTS audit_logs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -125,7 +119,6 @@ def init_db():
         )
     ''')
     
-    # Memory
     c.execute('''
         CREATE TABLE IF NOT EXISTS memory_entries (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -142,5 +135,4 @@ def init_db():
     conn.commit()
     conn.close()
 
-# Initialize on import
 init_db()

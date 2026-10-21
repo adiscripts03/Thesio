@@ -62,7 +62,6 @@ export async function getAuthenticatedContext(req?: any) {
         userId = data.user.id;
       }
     } catch {
-      // Fallback
     }
   }
 
@@ -146,7 +145,6 @@ async function memoryContext(db: DB, userId: string) {
     .join("\n");
 }
 
-/* ---------------------------------- 1 ---------------------------------- */
 
 export async function createRunImpl(
   db: DB,
@@ -183,7 +181,6 @@ export async function createRunImpl(
   return { id: data.id };
 }
 
-/* ---------------------------------- 2 ---------------------------------- */
 
 export async function runResearchImpl(db: DB, userId: string, projectId: string) {
   const project = await loadProject(db, projectId);
@@ -263,7 +260,6 @@ export async function runResearchImpl(db: DB, userId: string, projectId: string)
   return { retrieved: rows.length, flagged: flagged.length };
 }
 
-/* ---------------------------------- 3 ---------------------------------- */
 
 type IdeaOut = {
   kind: "idea" | "discrepancy";
@@ -389,7 +385,6 @@ export async function surfaceIdeasImpl(db: DB, userId: string, projectId: string
   return { count: items.length };
 }
 
-/* ---------------------------------- 4 ---------------------------------- */
 
 export async function selectIdeaImpl(
   db: DB,
@@ -435,7 +430,6 @@ export async function selectIdeaImpl(
   return { ideaId };
 }
 
-/* ------------------------------- 5, 6, 8 ------------------------------- */
 
 async function selectedIdea(db: DB, projectId: string) {
   const { data } = await db.from("ideas").select("*").eq("project_id", projectId).eq("selected", true).maybeSingle();
@@ -591,7 +585,6 @@ export async function codeImpl(db: DB, userId: string, projectId: string) {
   const project = await loadProject(db, projectId);
   const idea = await selectedIdea(db, projectId);
   const rawPrompt = project.prompt.toLowerCase();
-  // Extract meaningful topic keyword: filter out common prompt fillers like 'something around', 'research on', etc.
   const cleanedPrompt = rawPrompt
     .replace(/\b(something|around|about|research|project|study|investigation|on|in|a|an|the|of|for|with)\b/gi, ' ')
     .replace(/[^a-zA-Z0-9 ]/g, ' ')
@@ -718,7 +711,6 @@ export async function reviewArtifactImpl(
   return data;
 }
 
-/* ------------------------------ 10, 11, 12 ----------------------------- */
 
 async function executeVersion(
   db: DB,
@@ -754,7 +746,6 @@ async function executeVersion(
           KAGGLE_USERNAME: process.env["KAGGLE_USERNAME"] || "",
           KAGGLE_KEY: process.env["KAGGLE_KEY"] || process.env["KAGGLE_API_KEY"] || "",
         },
-        // Sandbox session lifetime. Must be >= the runCode timeout below.
         timeoutMs: 280_000,
       });
 
@@ -803,8 +794,6 @@ if _kkey:
 `;
 
       const codeToRun = `${autoInstallHeader}\n\n${cleanCode}`;
-      // Leaves ~40s of headroom inside Vercel's 300s function limit for the
-      // post-execution AI evaluation call and DB writes below.
       const execution = await sbx.runCode(codeToRun, { timeoutMs: 260_000 });
       stdout = (execution.logs.stdout || []).join("\n");
       stderr = (execution.logs.stderr || []).join("\n");
@@ -848,7 +837,6 @@ if _kkey:
         success = localData.success ?? (localData.exit_code === 0);
       }
     } catch {
-      // Local execution agent not active on http://127.0.0.1:8000
     }
   }
 
@@ -1020,7 +1008,6 @@ export async function rerunImpl(db: DB, userId: string, projectId: string) {
   });
 }
 
-/* --------------------------------- 13 ---------------------------------- */
 
 export async function architectureProposalImpl(db: DB, userId: string, projectId: string) {
   const { data: versions } = await db
@@ -1078,7 +1065,6 @@ export async function architectureDecisionImpl(
   return { applied: true, version: created };
 }
 
-/* --------------------------------- 14 ---------------------------------- */
 
 export async function paperImpl(db: DB, userId: string, projectId: string) {
   const project = await loadProject(db, projectId);
@@ -1157,7 +1143,6 @@ export async function paperImpl(db: DB, userId: string, projectId: string) {
     },
   ]);
 
-  // Built-in fast novelty & originality verification (Zero external API friction)
   const plagiarismResult: Record<string, unknown> = {
     success: true,
     score: 0.02,
@@ -1181,42 +1166,32 @@ export async function paperImpl(db: DB, userId: string, projectId: string) {
 export async function compilePdfImpl(title: string, content: string) {
   let safeContent = (content || "").trim();
 
-  // 1. Strip markdown code fences if output was wrapped by LLM
   safeContent = safeContent.replace(/^```(?:latex|tex)?\s*/i, "").replace(/\s*```$/i, "");
 
-  // 2. Normalize unicode characters that cause issues with TeX engines
   safeContent = safeContent
-    .replace(/\u2011/g, "-") // non-breaking hyphen
-    .replace(/\u202f/g, " ") // narrow non-breaking space
-    .replace(/\u00a0/g, " ") // non-breaking space
-    .replace(/[\u2018\u2019]/g, "'") // smart single quotes
-    .replace(/[\u201c\u201d]/g, '"'); // smart double quotes
+    .replace(/\u2011/g, "-")
+    .replace(/\u202f/g, " ")
+    .replace(/\u00a0/g, " ")
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u201c\u201d]/g, '"');
 
-  // 3. Clean claim tags and provenance markers (strip tags to keep clean text)
-  // Handles: \begin{claim ...} ... \end{claim}, <claim ...> ... </claim>, <claim .../>
   safeContent = safeContent.replace(/\\begin\{claim\b[^}]*\}([\s\S]*?)\\end\{claim\}/gi, "$1");
   safeContent = safeContent.replace(/\\begin\{claim\b[^}]*\}/gi, "");
   safeContent = safeContent.replace(/\\end\{claim\b[^}]*\}/gi, "");
   safeContent = safeContent.replace(/<claim\b[^>]*>([\s\S]*?)<\/claim>/gi, "$1");
   safeContent = safeContent.replace(/<\/?claim\b[^>]*>/gi, "");
 
-  // Remove any stray \begin followed by an empty line or at the very end of content
   safeContent = safeContent.replace(/\\begin\s*(?=\n\s*\n|$)/g, "");
-  // Remove any incomplete \begin{... that was cut off at the very end of generation without a closing brace
   safeContent = safeContent.replace(/\\begin\s*\{[^}\n]*$/g, "");
 
-  // 4. Strip conference style packages not installed in environment
   safeContent = safeContent.replace(/\\usepackage(\[[^\]]*\])?\{neurips[^}]*\}[^\n]*/g, "% [neurips omitted]");
   safeContent = safeContent.replace(/\\usepackage(\[[^\]]*\])?\{icml[^}]*\}[^\n]*/g, "% [icml omitted]");
   safeContent = safeContent.replace(/\\usepackage(\[[^\]]*\])?\{cvpr[^}]*\}[^\n]*/g, "% [cvpr omitted]");
   safeContent = safeContent.replace(/\\usepackage(\[[^\]]*\])?\{acl[^}]*\}[^\n]*/g, "% [acl omitted]");
 
-  // 5. Sanitize ampersands in titles and captions, and normalize conference author delimiter
   safeContent = safeContent.replace(/\\caption\{([^}]*?)&([^}]*?)\}/g, "\\caption{$1\\&$2}");
   safeContent = safeContent.replace(/\\And\b/g, "\\and");
 
-  // Fix: LLMs often use \State (algpseudocode syntax) but mistakenly import algorithmic.
-  // Only swap if we actually see \State or \Require, otherwise it might be valid algorithmic code (using \STATE).
   if (safeContent.match(/\\State\b/) || safeContent.match(/\\Require\b/)) {
     safeContent = safeContent.replace(/\\usepackage(\[[^\]]*\])?\{([^}]+)\}/g, (match, opt, pkgs) => {
       const newPkgs = pkgs.split(',').map((p: string) => p.trim() === 'algorithmic' ? 'algpseudocode' : p.trim()).join(',');
@@ -1224,7 +1199,6 @@ export async function compilePdfImpl(title: string, content: string) {
     });
   }
 
-  // 6. Inject essential macro fallbacks before \begin{document}
   const helperMacros = `
 \\providecommand{\\And}{\\and}
 \\providecommand{\\citet}[1]{\\cite{#1}}
@@ -1254,8 +1228,6 @@ ${safeContent}
 \\end{document}`;
   }
 
-  // 7. Auto-close truncated environments to prevent compilation errors
-  // Remove any premature \end{document} so we can place it at the very end.
   safeContent = safeContent.replace(/\\end\{document\}/g, "");
   
   const tokenRegex = /\\(begin|end)\s*\{([^}]+)\}/g;
@@ -1265,7 +1237,6 @@ ${safeContent}
     const action = envMatch[1];
     const envName = envMatch[2]?.trim();
     if (!action || !envName) continue;
-    // Only track valid standard LaTeX environment names (alphanumeric and optional star)
     if (!/^[a-zA-Z*]+$/.test(envName)) continue;
     if (action === 'begin') {
       stack.push(envName);
@@ -1353,7 +1324,6 @@ export async function runPlagiarismCheckImpl(db: DB, userId: string, projectId: 
   const paper = artifacts?.[0];
   if (!paper) throw new Error("Generate a paper first.");
 
-  // Fast built-in originality & novelty verification (Zero external API friction)
   const plagiarismResult = {
     success: true,
     score: 0.02,
@@ -1371,7 +1341,6 @@ export async function runPlagiarismCheckImpl(db: DB, userId: string, projectId: 
   return plagiarismResult;
 }
 
-/* --------------------------------- 15 ---------------------------------- */
 
 export async function distillMemoryImpl(db: DB, userId: string, projectId: string) {
   const project = await loadProject(db, projectId);
@@ -1427,7 +1396,6 @@ export async function distillMemoryImpl(db: DB, userId: string, projectId: strin
   return { expired };
 }
 
-/* --------------------------------- Theory Branch ---------------------------------- */
 
 export async function theoryImpl(db: DB, userId: string, projectId: string) {
   const project = await loadProject(db, projectId);
@@ -1478,7 +1446,6 @@ export async function theoryImpl(db: DB, userId: string, projectId: string) {
   return artifact;
 }
 
-/* ------------------------------- SUPERVISOR AGENT ------------------------------- */
 
 const HUMAN_GATES = new Set([STAGE.selection, STAGE.pseudocodeReview, STAGE.architecture]);
 
@@ -1558,8 +1525,6 @@ async function supervisorEvaluateOutput(
 ): Promise<{ valid: boolean; issues: string[]; confidence: number; suggestions: string[] }> {
   const fallback = { valid: true, issues: [] as string[], confidence: 0.95, suggestions: [] as string[] };
   
-  // Strategy 2: Fast-Path Heuristic Audit
-  // Instantly validates completed stage artifacts, eliminating 28+ blocking LLM calls.
   const hasContent = output && (
     typeof output === "object" 
       ? Object.keys(output as object).length > 0 
@@ -1615,7 +1580,6 @@ async function supervisorPlanTransition(
     return { action: "wait_for_human", targetStage: currentStage, reasoning: `Stage ${currentStage} (${STAGE_NAMES[currentStage]}) is a human gate — awaiting approval.`, agentBrief: "", confidence: 1.0 };
   }
 
-  // Strategy 2: Fast-Path Sequential Transition
   const nextStage = currentStage + 1;
   return {
     action: "advance",
@@ -1669,7 +1633,6 @@ export async function supervisorAutoAdvance(
       return { advanced: false, fromStage: currentStage, toStage: null, decision: "complete", waitingForHuman: false, reasoning: "Pipeline reached final stage (Paper Generation). Project complete." };
     }
 
-    // 1. If at a human gate → wait
     if (HUMAN_GATES.has(currentStage as any)) {
       const reasoning = `Stage ${currentStage} (${STAGE_NAMES[currentStage]}) requires human approval. Supervisor is providing recommendations but waiting.`;
       await log(db, userId, projectId, currentStage, reasoning, { actor: "supervisor", severity: "gate" });
@@ -1677,7 +1640,6 @@ export async function supervisorAutoAdvance(
       return { advanced: false, fromStage: currentStage, toStage: null, decision: "wait_for_human", waitingForHuman: true, reasoning };
     }
 
-    // 2. Gather stage-specific output for evaluation
     let stageOutput: unknown = {};
     if (currentStage === STAGE.prompt) {
       stageOutput = { prompt: project.prompt, title: project.title };
@@ -1692,13 +1654,10 @@ export async function supervisorAutoAdvance(
       stageOutput = data ?? {};
     }
 
-    // 3. Evaluate output quality
     const evaluation = await supervisorEvaluateOutput(db, userId, projectId, currentStage, stageOutput);
 
-    // 4. Plan transition
     const plan = await supervisorPlanTransition(db, userId, projectId, currentStage);
 
-    // 5. Auto-advance if confidence is high and output is valid
     if (plan.action === "advance" && (plan.confidence >= 0.70 || evaluation.valid)) {
       const nextStage = plan.targetStage || currentStage + 1;
       await db.from("projects").update({ stage: nextStage }).eq("id", projectId);
@@ -1710,7 +1669,6 @@ export async function supervisorAutoAdvance(
       return { advanced: true, fromStage: currentStage, toStage: nextStage, decision: "advance", waitingForHuman: false, reasoning: plan.reasoning };
     }
 
-    // 6. Hold — log why
     await supervisorLogDecision(db, userId, projectId, currentStage, null, plan.action, plan.reasoning, plan.confidence, { evaluation, plan });
     await log(db, userId, projectId, currentStage,
       `Supervisor holding: ${plan.action} (${evaluation.issues.length} issues, confidence ${plan.confidence.toFixed(2)})`,

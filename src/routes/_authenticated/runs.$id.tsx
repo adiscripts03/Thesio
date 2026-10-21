@@ -229,7 +229,6 @@ function RunWorkspace() {
 
   return (
     <main className="mx-auto grid max-w-[1520px] gap-8 px-6 py-8 lg:grid-cols-[240px_minmax(0,1fr)_340px]">
-      {/* Stage rail */}
       <nav className="hidden h-fit lg:sticky lg:top-20 lg:block">
         <p className="rule-label">Pipeline</p>
         <ol className="mt-3 space-y-1 border-l border-border/70 pl-2.5">
@@ -278,7 +277,6 @@ function RunWorkspace() {
           <Prose text={project.prompt} />
         </StageCard>
 
-        {/* 2 — Research */}
         <StageCard
           index={2}
           {...stageProps(2)}
@@ -328,7 +326,6 @@ function RunWorkspace() {
           )}
         </StageCard>
 
-        {/* 3 — Ideas */}
         <StageCard
           index={3}
           {...stageProps(3)}
@@ -379,7 +376,6 @@ function RunWorkspace() {
           </div>
         </StageCard>
 
-        {/* 4 — Selection gate */}
         <StageCard index={4} {...stageProps(4)} active={project.stage === 4}>
           <div className="space-y-4">
             <div className="flex flex-wrap gap-2">
@@ -437,7 +433,6 @@ function RunWorkspace() {
           </div>
         </StageCard>
 
-        {/* 5 — Idea Graph */}
         <StageCard
           index={5}
           {...stageProps(5)}
@@ -489,7 +484,6 @@ function RunWorkspace() {
                   </div>
                 )}
 
-                {/* Interactive Visual Graph Canvas */}
                 {parsed.nodes && parsed.edges && (
                   <div>
                     <p className="rule-label mb-2">Interactive Idea Positioning Graph</p>
@@ -508,7 +502,6 @@ function RunWorkspace() {
           })()}
         </StageCard>
 
-        {/* 6 — Formulation */}
         <StageCard
           index={6}
           {...stageProps(6)}
@@ -544,7 +537,6 @@ function RunWorkspace() {
           )}
         </StageCard>
 
-        {/* 7 & 8 — Pseudocode */}
         <StageCard
           index={7}
           {...stageProps(7)}
@@ -585,7 +577,6 @@ function RunWorkspace() {
           }
         />
 
-        {/* 9 & 10 — Code */}
         <StageCard
           index={9}
           {...stageProps(9)}
@@ -602,7 +593,6 @@ function RunWorkspace() {
           {code ? <Mono>{code.content}</Mono> : <Empty>Approve the pseudocode to unlock code generation.</Empty>}
         </StageCard>
 
-        {/* 10 — Sandboxed Execution */}
         <StageCard
           index={10}
           {...stageProps(10)}
@@ -632,7 +622,6 @@ function RunWorkspace() {
           )}
         </StageCard>
 
-        {/* 11 — Results */}
         <StageCard index={11} {...stageProps(11)} active={project.stage === 11}>
           {versions.length === 0 ? (
             <Empty>No results yet.</Empty>
@@ -699,7 +688,6 @@ function RunWorkspace() {
           )}
         </StageCard>
 
-        {/* 12 — Rerun Loop */}
         <StageCard
           index={12}
           {...stageProps(12)}
@@ -717,7 +705,6 @@ function RunWorkspace() {
           <Empty>Each rerun is stored as its own version with a scorecard — nothing is overwritten.</Empty>
         </StageCard>
 
-        {/* 13 — Architecture Gate */}
         <StageCard
           index={13}
           {...stageProps(13)}
@@ -775,7 +762,6 @@ function RunWorkspace() {
           )}
         </StageCard>
 
-        {/* 14 — Paper (Final Stage) */}
         <StageCard
           index={14}
           {...stageProps(14)}
@@ -826,7 +812,6 @@ function RunWorkspace() {
             <div className="space-y-6">
               <Mono>{paper.content}</Mono>
 
-              {/* Plagiarism Analysis Report from GoWinston AI */}
               {(() => {
                 const plag = (paper.meta as { plagiarism?: Record<string, unknown> } | null)?.plagiarism;
                 if (!plag) return null;
@@ -842,7 +827,6 @@ function RunWorkspace() {
                   );
                 }
 
-                // Handle score normalization (GoWinston can return 0.0-1.0 or 0-100)
                 let rawScore = Number(plag.score ?? 0);
                 if (rawScore <= 1 && rawScore > 0) rawScore = rawScore * 100;
                 const plagPercent = Math.min(100, Math.max(0, Math.round(rawScore)));
@@ -871,7 +855,6 @@ function RunWorkspace() {
                     </div>
 
                     <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 items-center">
-                      {/* Visual Circular Gauge */}
                       <div className="flex items-center gap-4 rounded-sm border border-border bg-secondary/30 p-3">
                         <div className="relative flex h-16 w-16 items-center justify-center">
                           <svg className="h-16 w-16 -rotate-90 transform" viewBox="0 0 36 36">
@@ -903,14 +886,12 @@ function RunWorkspace() {
                         </div>
                       </div>
 
-                      {/* Stat 2: Matched Sources */}
                       <div className="rounded-sm border border-border bg-secondary/30 p-3">
                         <p className="rule-label">Matched Sources</p>
                         <p className="mt-1 text-xl font-bold">{sources.length}</p>
                         <p className="text-[11px] text-muted-foreground">External overlaps found</p>
                       </div>
 
-                      {/* Stat 3: Verification */}
                       <div className="rounded-sm border border-border bg-secondary/30 p-3">
                         <p className="rule-label">Verification Engine</p>
                         <p className="mt-1 text-sm font-semibold">GoWinston AI v2</p>
@@ -918,7 +899,6 @@ function RunWorkspace() {
                       </div>
                     </div>
 
-                    {/* Matched Sources List */}
                     {sources.length > 0 && (
                       <div className="mt-4 space-y-2 pt-2">
                         <p className="rule-label">Overlapping Literature / Web Sources</p>
@@ -954,7 +934,6 @@ function RunWorkspace() {
         </StageCard>
       </div>
 
-      {/* Sidebar: Supervisor Control & Audit Log */}
       <aside className="h-fit space-y-4 lg:sticky lg:top-20">
         <div className="paper p-5 sm:p-6">
           <div className="flex items-center justify-between">

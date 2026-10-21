@@ -1,11 +1,8 @@
-# Kaggle API Credentials
 KAGGLE_API_TOKEN=your_kaggle_api_token_here
 KAGGLE_API_KEY=your_kaggle_api_token_here
 
-# E2B Sandbox API Key
 E2B_API_KEY=your_e2b_api_key_here
 
-# LLM Configuration (Gemma 4 Local / Groq Cloud / Gemini)
 USE_LOCAL_LLM=true
 LLM_MODEL=gemma4:12b
 GEMMA_MODEL=gemma4:12b
@@ -15,11 +12,9 @@ GEMMA_4_API_KEY=your_gemma_4_api_key_here
 GROQ_API_KEY=your_groq_api_key_here
 GROQ_MODEL=llama-3.3-70b-versatile
 
-# GoWinston AI Plagiarism API Key
 WINSTON_AI_API_KEY=your_winston_api_key_here
 GOWINSTON_API_KEY=your_winston_api_key_here
 
-# Supabase Configuration
 VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=your_supabase_publishable_key
 SUPABASE_URL=https://your-project.supabase.co

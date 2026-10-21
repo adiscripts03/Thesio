@@ -15,7 +15,6 @@ function AuthenticatedLayout() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   useEffect(() => {
-    // Verify User Auth Session
     if (!loading && !session) {
       void navigate({ to: "/auth", search: { next: pathname } });
     }
@@ -70,7 +69,6 @@ function AuthenticatedLayout() {
                 try {
                   await supabase.auth.signOut();
                 } catch {
-                  // ignore
                 }
                 void navigate({ to: "/" });
               }}

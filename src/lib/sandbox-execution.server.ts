@@ -18,13 +18,6 @@ type SandboxStartResult = {
 const SANDBOX_TEMPLATE =
   process.env.E2B_SANDBOX_TEMPLATE || "code-interpreter-v1";
 
-/*
- * E2B Hobby supports up to 1 hour continuous runtime.
- * Pro supports up to 24 hours.
- *
- * We deliberately keep an individual experiment bounded so a broken
- * generated program cannot consume a sandbox forever.
- */
 const SANDBOX_TTL_MS = readPositiveInt(
   process.env.E2B_SANDBOX_TTL_MS,
   45 * 60 * 1000,
@@ -61,17 +54,6 @@ function readPositiveInt(
 }
 
 function getInternetAccess(): boolean {
-  /*
-   * Your generated research code needs external dataset access.
-   *
-   * false:
-   *   Sandbox is isolated from the internet.
-   *
-   * true:
-   *   Python can access public research datasets/APIs.
-   *
-   * This is intentionally ENV controlled rather than hardcoded.
-   */
   return process.env.E2B_ALLOW_INTERNET_ACCESS === "true";
 }
 
@@ -94,12 +76,6 @@ function shellQuote(value: string): string {
 }
 
 function buildExecutionCommand(): string {
-  /*
-   * GNU timeout is available in the standard Debian-based E2B runtime.
-   *
-   * - TERM gives the Python process a chance to clean up.
-   * - KILL-after prevents a process that ignores TERM from hanging forever.
-   */
   return [
     "cd",
     shellQuote(EXECUTION_ROOT),
@@ -127,23 +103,9 @@ async function safeKillSandbox(sandboxId: string): Promise<void> {
       requestTimeoutMs: REQUEST_TIMEOUT_MS,
     });
   } catch {
-    /*
-     * The sandbox may already have expired.
-     * There is nothing useful to do here.
-     */
   }
 }
 
-/**
- * Starts a real persistent E2B sandbox job.
- *
- * Important:
- * We DO NOT await the Python program.
- *
- * The Python program is started with E2B's background command support.
- * The HTTP request can therefore finish quickly and the next poll request
- * can reconnect to the same sandbox by sandbox ID.
- */
 export async function startSandboxExecution(
   cleanCode: string,
 ): Promise<SandboxStartResult> {
@@ -171,18 +133,8 @@ export async function startSandboxExecution(
       timeoutMs: SANDBOX_TTL_MS,
       requestTimeoutMs: REQUEST_TIMEOUT_MS,
 
-      /*
-       * The sandbox remains E2B-isolated.
-       *
-       * Internet access is explicitly configurable because your generated
-       * research programs need Kaggle/Hugging Face access for real datasets.
-       */
       allowInternetAccess: getInternetAccess(),
 
-      /*
-       * Keep secure sandbox communication enabled when supported by the
-       * installed E2B SDK/template.
-       */
       secure: true,
 
       metadata: {
@@ -198,12 +150,6 @@ export async function startSandboxExecution(
       cleanCode,
     );
 
-    /*
-     * First perform a syntax check.
-     *
-     * This is deliberately synchronous and short.
-     * We do NOT start the actual experiment until Python syntax is valid.
-     */
     const syntax = await sandbox.commands.run(
       `cd ${shellQuote(
         EXECUTION_ROOT,
@@ -230,11 +176,6 @@ export async function startSandboxExecution(
       };
     }
 
-    /*
-     * Start the actual program in E2B's background execution mode.
-     *
-     * The command itself returns immediately.
-     */
     const command = buildExecutionCommand();
 
     await sandbox.commands.run(command, {
@@ -255,7 +196,6 @@ export async function startSandboxExecution(
           requestTimeoutMs: REQUEST_TIMEOUT_MS,
         });
       } catch {
-        // Ignore cleanup failure.
       }
     }
 
@@ -270,13 +210,6 @@ export async function startSandboxExecution(
   }
 }
 
-/**
- * Poll a previously started sandbox.
- *
- * This function is intentionally cheap:
- * it reconnects, checks finished.flag, and only reads output after
- * the process has completed.
- */
 export async function pollSandboxExecution(
   sandboxId: string,
 ): Promise<SandboxExecutionResult> {
@@ -303,11 +236,6 @@ export async function pollSandboxExecution(
     });
 
     if (!running) {
-      /*
-       * The sandbox may have timed out or been killed.
-       *
-       * Try to read the files anyway before declaring failure.
-       */
       try {
         const finished = await sandbox.files.read(
           `${EXECUTION_ROOT}/finished.flag`,
@@ -344,9 +272,6 @@ export async function pollSandboxExecution(
         `${EXECUTION_ROOT}/finished.flag`,
       );
     } catch {
-      /*
-       * The marker doesn't exist yet.
-       */
       return {
         finished: false,
         success: false,
@@ -403,10 +328,6 @@ export async function pollSandboxExecution(
 
     const success = exitCode === 0;
 
-    /*
-     * We have collected the complete result.
-     * Kill the sandbox now to stop billing and resource usage.
-     */
     await safeKillSandbox(sandboxId);
 
     return {

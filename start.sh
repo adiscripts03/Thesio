@@ -8,7 +8,6 @@ echo "=========================================================="
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT_DIR"
 
-# 1. Check / Start Local Ollama if configured or if no cloud Gemma API key is set
 if [ "$USE_LOCAL_LLM" = "true" ] || [ -z "$GEMMA_API_KEY" ]; then
   if curl -s http://localhost:11434/api/tags >/dev/null 2>&1; then
     echo "✅ Local Ollama is active on http://localhost:11434"
@@ -19,7 +18,6 @@ if [ "$USE_LOCAL_LLM" = "true" ] || [ -z "$GEMMA_API_KEY" ]; then
   fi
 fi
 
-# 2. Check / Start Python Backend on port 8000
 PYTHON_BIN="python3"
 if [ -f "$ROOT_DIR/venv/bin/python3" ]; then
   PYTHON_BIN="$ROOT_DIR/venv/bin/python3"
@@ -33,7 +31,6 @@ else
   sleep 1
 fi
 
-# Render and other cloud platforms provide $PORT (default to 8080 if not set)
 APP_PORT="${PORT:-8080}"
 echo "=========================================================="
 echo "🎯 Starting Thesio Dashboard on port $APP_PORT"

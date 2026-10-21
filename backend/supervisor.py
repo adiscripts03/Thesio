@@ -41,18 +41,15 @@ class SupervisorAgent:
         """
         self.log_audit(10, "Disposable sandbox provisioned — network denied, 900s limit", "sandbox")
         
-        # Clean markdown code block if present
         import re
         clean_code = re.sub(r'^```(?:python)?\n?', '', code.strip(), flags=re.IGNORECASE)
         clean_code = re.sub(r'\n?```$', '', clean_code.strip())
         
-        # 1. Run the code in sandbox (with local fallback if E2B_API_KEY is not set)
         result = run_with_baselines(clean_code)
         
-        for i, cmd in enumerate(result.get('stdout', '').split('\\n')[:5]): # log first few lines
+        for i, cmd in enumerate(result.get('stdout', '').split('\\n')[:5]):
             self.log_audit(10, f"STDOUT: {cmd}", "sandbox", detail={"network": "denied", "isolated": True})
             
-        # 2. Extract real metrics directly from code stdout JSON (no fake numbers!)
         real_metrics = {}
         import re
         json_matches = re.findall(r'\{[^{}]*"(?:loss|accuracy|f1|precision|recall|score|psnr|ssim|mse|val_loss)"[^{}]*\}', result.get('stdout', ''), re.IGNORECASE)
@@ -62,7 +59,6 @@ class SupervisorAgent:
             except Exception:
                 pass
 
-        # Also attempt general JSON match at end of STDOUT
         if not real_metrics:
             lines = [l.strip() for l in result.get('stdout', '').splitlines() if l.strip()]
             for line in reversed(lines[-10:]):
@@ -75,7 +71,6 @@ class SupervisorAgent:
                     except Exception:
                         pass
 
-        # 3. Evaluate with LLM for qualitative reading, while preserving real metrics
         prompt = f"""
         You are the sandbox execution reporter. The code was executed in an isolated container.
         Here is the output from the sandbox:
@@ -99,7 +94,6 @@ class SupervisorAgent:
         except:
             eval_data = {"metrics": real_metrics, "score": 1.0 if result['success'] else 0.0, "verdict": "good" if result['success'] else "bad", "analysis": result.get('error') or "Executed"}
 
-        # Prioritize real stdout metrics if present
         final_metrics = real_metrics if real_metrics else eval_data.get('metrics', {})
 
         return {

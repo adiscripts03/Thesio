@@ -104,7 +104,6 @@ function RunsPage() {
           newNames.push(file.name);
           toast.success(`Processed style reference from ${file.name}`);
         } else {
-          // Client-side clean text extraction for PDFs
           const text = await file.text().catch(() => "");
           const stringMatches = text.match(/\(([^()]{8,})\)/g);
           let cleanLines: string[] = [];
@@ -138,7 +137,6 @@ function RunsPage() {
           toast.success(`Processed style reference from ${file.name}`);
         }
       } catch {
-        // Ultimate fallback: accept file name as style tag
         combinedStyle += (combinedStyle ? "\n\n" : "") + `Writing style sample reference from ${file.name}`;
         newNames.push(file.name);
         toast.success(`Loaded reference ${file.name}`);
@@ -255,7 +253,6 @@ function RunsPage() {
             </div>
           </div>
 
-          {/* PDF Writing Style Upload */}
           <div className="mt-5 space-y-2">
             <Label>Writing style reference (optional)</Label>
             <p className="text-xs text-muted-foreground">

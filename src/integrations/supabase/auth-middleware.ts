@@ -58,7 +58,6 @@ export async function getAuthenticatedContextFromRequest(request: Request) {
         userId = data.user.id;
       }
     } catch {
-      // Use fallback default user ID
     }
   }
 
@@ -102,7 +101,6 @@ export async function getAuthenticatedContext(req?: any) {
           userId = data.user.id;
         }
       } catch {
-        // Fallback default user ID
       }
     }
     return { supabase, userId };

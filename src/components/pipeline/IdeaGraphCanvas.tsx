@@ -131,7 +131,6 @@ export function IdeaGraphCanvas({ nodesData, edgesData }: { nodesData: any[]; ed
       nodesData.find((n) => n.type === 'hypothesis' || n.type === 'user_idea') || nodesData[0];
     const outerNodes = nodesData.filter((n) => n.id !== centerNode?.id);
 
-    // Spaced elliptical layout so 250px cards don't collide
     const count = Math.max(outerNodes.length, 1);
     const radiusX = Math.max(340, count * 45);
     const radiusY = Math.max(220, count * 32);

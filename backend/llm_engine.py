@@ -8,26 +8,23 @@ from typing import Dict, Any, Optional
 try:
     from dotenv import load_dotenv
 except ImportError:
-    def load_dotenv(*args, **kwargs):  # type: ignore
+    def load_dotenv(*args, **kwargs):
         pass
 
 try:
     from groq import Groq
 except ImportError:
-    Groq = None  # type: ignore
+    Groq = None
 from pydantic import BaseModel
 
-# Automatically load environment variables from current working directory and repo root
 load_dotenv()
 root_env = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")
 if os.path.exists(root_env):
     load_dotenv(root_env)
 
-# Setup logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Gemma 4 LLM Configuration - Hacktoberfest Hack Day x AWS SBG RTMSSU
 USE_LOCAL_LLM = os.getenv("USE_LOCAL_LLM", "false").lower() == "true"
 GEMMA_MODEL = os.getenv("LLM_MODEL") or os.getenv("GEMMA_MODEL") or "gemma4:12b"
 GEMMA_FALLBACK_MODEL = os.getenv("LLM_FALLBACK_MODEL") or os.getenv("GEMMA_FALLBACK_MODEL") or "gemma4:12b"
@@ -53,7 +50,6 @@ def get_llm_config():
     gemma_key = os.getenv("GEMMA_API_KEY") or os.getenv("GEMMA_4_API_KEY")
     base_url = os.getenv("LLM_BASE_URL")
     
-    # Check if local Ollama is available
     local_active = USE_LOCAL_LLM or is_ollama_online()
 
     if not base_url:
@@ -149,7 +145,6 @@ def call_llm(
     try:
         res = requests.post(base_url, headers=headers, json=payload, timeout=90)
         
-        # If response was not ok, check if response_format caused issue or if retry needed
         if not res.ok:
             logger.warning(f"Gemma 4 call returned HTTP {res.status_code}: {res.text[:200]}")
             if require_json and "response_format" in payload:
@@ -161,7 +156,6 @@ def call_llm(
                     data = res_retry.json()
                     return data.get("choices", [{}])[0].get("message", {}).get("content", "")
 
-            # If cloud fallback to Gemini is available
             gemini_key = os.getenv("GEMINI_API_KEY") or (api_key if not is_local else "")
             if gemini_key and not is_local:
                 logger.info("Falling back to Gemini...")
@@ -175,7 +169,6 @@ def call_llm(
             raise ValueError(f"Empty content returned from Gemma 4 API ({base_url})")
         return content
 
-        # 1. Try Groq first in cloud / fallback
         groq_key = os.getenv("GROQ_API_KEY")
         if groq_key and not is_groq:
             try:
@@ -201,7 +194,6 @@ def call_llm(
             except Exception as e_groq:
                 logger.error(f"Groq fallback failed: {e_groq}")
 
-        # 2. Try Gemini fallback if Groq failed or not configured
         gemini_key = os.getenv("GEMINI_API_KEY") or (api_key if not is_local and not is_groq else "")
         if gemini_key:
             try:
@@ -231,9 +223,7 @@ def extract_json(raw: str) -> dict:
         return json.loads(text)
     except json.JSONDecodeError:
         try:
-            # Fix unescaped backslashes commonly emitted in LaTeX equations
             fixed = re.sub(r'\\(?!["\\/bfnrt]|u[0-9a-fA-F]{4})', r'\\\\', text)
-            # Remove trailing commas before closing braces
             fixed = re.sub(r',\s*([}\]])', r'\1', fixed)
             return json.loads(fixed)
         except Exception:

@@ -8,7 +8,6 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 1. Check local demo session fallback first, initialize default if none
     let localDemo = localStorage.getItem("local_demo_user");
     if (!localDemo) {
       const defaultSession = {
@@ -30,7 +29,6 @@ export function useAuth() {
         localStorage.setItem("local_demo_user", JSON.stringify(defaultSession));
         localDemo = JSON.stringify(defaultSession);
       } catch {
-        // ignore
       }
     }
     if (localDemo) {
@@ -39,11 +37,9 @@ export function useAuth() {
         setSession(parsed as Session);
         setLoading(false);
       } catch {
-        // invalid json, continue
       }
     }
 
-    // 2. Listen to supabase auth state
     const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => {
       if (next) {
         setSession(next);
@@ -71,7 +67,6 @@ export function useAuth() {
           try {
             setSession(JSON.parse(currentLocal) as Session);
           } catch {
-            // ignore
           }
         }
       }
@@ -82,7 +77,6 @@ export function useAuth() {
         try {
           setSession(JSON.parse(currentLocal) as Session);
         } catch {
-          // ignore
         }
       }
       setLoading(false);

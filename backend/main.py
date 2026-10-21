@@ -375,7 +375,6 @@ async def extract_pdf(file: UploadFile = File(...)):
     contents = await file.read()
     all_lines = []
     
-    # 1. Try pypdf (lightweight pure python)
     try:
         import io
         import pypdf
@@ -385,7 +384,6 @@ async def extract_pdf(file: UploadFile = File(...)):
             lines = [l.strip() for l in text.split("\n") if len(l.strip()) > 5]
             all_lines.extend(lines)
     except Exception as e1:
-        # 2. Try fitz (PyMuPDF if installed)
         try:
             import fitz
             doc = fitz.open(stream=contents, filetype="pdf")
@@ -397,7 +395,6 @@ async def extract_pdf(file: UploadFile = File(...)):
         except Exception as e2:
             print(f"PDF extraction error: pypdf({e1}), fitz({e2})")
 
-    # 3. Fallback to raw text byte extraction if PDF text layer is non-standard
     if not all_lines:
         import re
         raw_strings = re.findall(r'[\x20-\x7E]{6,}', contents.decode('latin1', errors='ignore'))
@@ -411,7 +408,6 @@ async def extract_pdf(file: UploadFile = File(...)):
             and 'FlateDecode' not in s
         ][:50]
 
-    # Sample representative lines evenly from document
     total = len(all_lines)
     if total == 0:
         sample = [f"Reference style sample from {file.filename}"]
@@ -477,7 +473,6 @@ async def trace_websocket(websocket: WebSocket, project_id: str):
     
     try:
         while True:
-            # Poll for new audit logs
             c.execute("SELECT id, stage, event, actor, severity, detail FROM audit_logs WHERE project_id = ? AND id > ? ORDER BY id ASC", (project_id, last_id))
             rows = c.fetchall()
             
@@ -492,7 +487,7 @@ async def trace_websocket(websocket: WebSocket, project_id: str):
                     "detail": row['detail']
                 })
                 
-            await asyncio.sleep(1) # Simple polling loop for demonstration
+            await asyncio.sleep(1)
     except Exception as e:
         print(f"WebSocket closed: {e}")
     finally:

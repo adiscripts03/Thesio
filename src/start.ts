@@ -9,7 +9,6 @@ const apiMiddleware = createMiddleware().server(async ({ next, request }) => {
   const url = new URL(request.url);
   const pathname = url.pathname;
 
-  // 1. Pipeline API route (/api/pipeline)
   if (pathname === "/api/pipeline") {
     if (request.method === "OPTIONS") {
       return new Response(null, {
@@ -49,7 +48,6 @@ const apiMiddleware = createMiddleware().server(async ({ next, request }) => {
     }
   }
 
-  // 2. Local DB / PostgREST fallback route
   if (pathname.startsWith("/rest/v1/") || pathname.startsWith("/api/rest/")) {
     try {
       const body = request.method !== "GET" && request.method !== "HEAD"

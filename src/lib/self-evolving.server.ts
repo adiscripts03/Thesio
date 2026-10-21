@@ -1,10 +1,3 @@
-/**
- * Self-Evolving Agent Strategy Versioning & Governance Module
- *
- * Implements governed self-evolution using schema-locked JSON configs,
- * fixed held-out benchmark evaluation, multi-metric promotion gates,
- * and live canary health checks with automatic rollback.
- */
 
 import type { Database, Json } from "@/integrations/supabase/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -42,16 +35,11 @@ export type MetricSet = {
 const MIN_IMPROVEMENT = 0.02;
 const REQUIRED_METRIC_WINS = 2;
 
-/**
- * 1. Proposes a new strategy version based on batched outcome logs.
- * Strategy is DATA (JSON), never executable code.
- */
 export async function proposeStrategyEvolution(
   db: DB,
   userId: string,
   projectId: string,
 ): Promise<{ proposed: boolean; versionLabel: string; rationale: string }> {
-  // Fetch recent outcome logs
   const { data: logs } = await db
     .from("audit_logs")
     .select("stage,event,severity,actor,detail")
@@ -86,7 +74,6 @@ export async function proposeStrategyEvolution(
 
   const versionLabel = proposed.version || `v${Date.now().toString().slice(-4)}`;
 
-  // Store proposed strategy version
   await db.from("supervisor_decisions" as any).insert({
     project_id: projectId,
     user_id: userId,
@@ -102,16 +89,12 @@ export async function proposeStrategyEvolution(
   return { proposed: true, versionLabel, rationale: proposed.rationale };
 }
 
-/**
- * 2. Multi-Metric Promotion Gate against Held-Out Benchmarks
- */
 export async function evaluateCandidateStrategy(
   db: DB,
   userId: string,
   projectId: string,
   candidateVersion: string,
 ): Promise<{ decision: "promote_canary" | "reject" | "needs_human"; reason: string }> {
-  // Fetch candidate decision
   const { data: dec } = await db
     .from("supervisor_decisions" as any)
     .select("*")
@@ -125,7 +108,6 @@ export async function evaluateCandidateStrategy(
     return { decision: "reject", reason: "No proposed strategy found to evaluate." };
   }
 
-  // Simulated held-out eval harness results
   const baseline: MetricSet = {
     success_rate: 0.82,
     citation_precision: 0.85,
@@ -142,7 +124,6 @@ export async function evaluateCandidateStrategy(
     injection_resistance_rate: 1.0,
   };
 
-  // Veto on security regression
   if (candidateMetrics.injection_resistance_rate < baseline.injection_resistance_rate - 0.001) {
     return {
       decision: "reject",
@@ -150,7 +131,6 @@ export async function evaluateCandidateStrategy(
     };
   }
 
-  // Count wins across primary metrics
   const wins = [
     candidateMetrics.success_rate - baseline.success_rate >= MIN_IMPROVEMENT,
     candidateMetrics.citation_precision - baseline.citation_precision >= MIN_IMPROVEMENT,
@@ -165,7 +145,6 @@ export async function evaluateCandidateStrategy(
     };
   }
 
-  // Record promotion to canary in audit logs
   await db.from("audit_logs").insert({
     project_id: projectId,
     user_id: userId,
